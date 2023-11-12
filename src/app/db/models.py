@@ -1,7 +1,7 @@
-from typing import Optional
-from database import Base
-from sqlalchemy import Table, Column, Integer, String, ForeignKey, Boolean
+from db.database import Base
+from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
+import uuid
 
 
 requirements_has_ads = Table(
@@ -23,7 +23,7 @@ jobs_matches = Table(
 
 class DbUsers(Base):
     __tablename__ = 'users'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     username = Column(String)
     password = Column(String)
     type = Column(String)
@@ -32,7 +32,7 @@ class DbUsers(Base):
 
 class DbProfessionals(Base):
     __tablename__: str = 'professionals'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     first_name = Column(String)
     last_name = Column(String)
     user = relationship('DbUsers', back_populates='professional')
@@ -41,7 +41,7 @@ class DbProfessionals(Base):
 
 class DbCompanies(Base):
     __tablename__: str = 'companies'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     name = Column(String)
     user = relationship('DbUsers', back_populates='company')
     company_info = relationship('DbCompanyInfo', back_populates='company')
@@ -49,31 +49,31 @@ class DbCompanies(Base):
 
 class DbProfessionalInfo(Base):
     __tablename__: str = 'professional_info'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     status = Column(String)
     professional = relationship('DbProfessionals', back_populates='professional_info')
     info = relationship('DbInfo', back_populates='professional_info')
 
 class DbCompanyInfo(Base):
     __tablename__: str = 'company_info'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     contacts = Column(String)
     company = relationship('DbCompanies', back_populates='company_info')
     info = relationship('DbInfo', back_populates='company_info')
 
 class DbInfo(Base):
     __tablename__: str = 'info'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     description = Column(String)
     location = Column(String)
-    picture = Column(String)
+    picture = Column(LargeBinary, nullable=True, default=None)
     company_info = relationship('DbCompanyInfo', back_populates='info')
     professional_info = relationship('DbProfessionalInfo', back_populates='info')
     ads = relationship('DbAds', back_populates='info')
 
 class DbAds(Base):
     __tablename__: str = 'ads'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     description = Column(String)
     location = Column(String)
     status = Column(String)
@@ -84,13 +84,13 @@ class DbAds(Base):
 
 class DbRequirements(Base):
     __tablename__ = 'requirements'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     name = Column(String)
     ads = relationship("DbAds", secondary=requirements_has_ads, backref="requirements")
 
 class DbSalaryRange(Base):
     __tablename__: str = 'salary_range'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     min = Column(String)
     max = Column(String)
     ads = relationship('DbAds', back_populates='salary_range')
