@@ -3,14 +3,14 @@ from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 import uuid
 
-
 adds_skills = Table(
     'adds_skills',
     Base.metadata,
     Column('skill_id', String, ForeignKey('skills.id')),
     Column('ad_id', String, ForeignKey('ads.id')),
-    Column('level', String), 
+    Column('level', String),
 )
+
 
 class DbJobsMatches(Base):
     __tablename__ = 'jobs_matches'
@@ -32,6 +32,7 @@ class DbUsers(Base):
     professional = relationship('DbProfessionals', back_populates='user')
     company = relationship('DbCompanies', back_populates='user')
 
+
 class DbProfessionals(Base):
     __tablename__: str = 'professionals'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
@@ -42,7 +43,7 @@ class DbProfessionals(Base):
     professional_info_id = Column(String(50), ForeignKey('professional_info.id'))
     professional_info = relationship('DbProfessionalInfo', back_populates='professional')
     match = relationship('DbJobsMatches', back_populates='professional')
-    
+
 
 class DbCompanies(Base):
     __tablename__: str = 'companies'
@@ -55,6 +56,7 @@ class DbCompanies(Base):
     match = relationship("DbJobsMatches", back_populates='company')
     # ads = relationship('DbAds', secondary=DbJobsMatches, backref='ads_associated')
 
+
 class DbProfessionalInfo(Base):
     __tablename__: str = 'professional_info'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
@@ -63,6 +65,7 @@ class DbProfessionalInfo(Base):
     info_id = Column(String(50), ForeignKey('info.id'))
     info = relationship('DbInfo', back_populates='professional_info')
 
+
 class DbCompanyInfo(Base):
     __tablename__: str = 'company_info'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
@@ -70,6 +73,7 @@ class DbCompanyInfo(Base):
     company = relationship('DbCompanies', back_populates='company_info')
     info_id = Column(String(50), ForeignKey('info.id'))
     info = relationship('DbInfo', back_populates='company_info')
+
 
 class DbInfo(Base):
     __tablename__: str = 'info'
@@ -81,6 +85,7 @@ class DbInfo(Base):
     professional_info = relationship('DbProfessionalInfo', back_populates='info')
     ad_id = Column(String(50), ForeignKey('ads.id'))
     ad = relationship('DbAds', back_populates='info')
+
 
 class DbAds(Base):
     __tablename__: str = 'ads'
@@ -94,11 +99,13 @@ class DbAds(Base):
     requirements = relationship("DbSkills", secondary=adds_skills, backref="ad_associated")
     match = relationship('DbJobsMatches', back_populates='ad')
 
+
 class DbSkills(Base):
     __tablename__ = 'skills'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     name = Column(String)
     ad = relationship("DbAds", secondary=adds_skills, backref="skills_associated")
+
 
 class DbSalaryRanges(Base):
     __tablename__: str = 'salary_ranges'
@@ -106,10 +113,3 @@ class DbSalaryRanges(Base):
     min = Column(String)
     max = Column(String)
     ad = relationship('DbAds', back_populates='salary_range')
-
-
-
-
-
-
-
