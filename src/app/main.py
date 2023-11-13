@@ -1,14 +1,8 @@
-from typing import Annotated, List
-from fastapi import FastAPI, Depends, Body
-from sqlalchemy.orm import Session
-from schemas.user import UserBase
-from db.models import DbUsers
-from db.database import get_db
+from fastapi import FastAPI
+from app.api.api_v1.api import api_router
 
 app = FastAPI()
+app.include_router(api_router, tags=['user'])
 
 
-@app.get('/users/', response_model=List[UserBase])
-def get_user(db: Annotated[Session, Depends(get_db)]):
-    user = db.query(DbUsers).all()
-    return user
+

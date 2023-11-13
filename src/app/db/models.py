@@ -1,25 +1,27 @@
-from db.database import Base
+from app.db.database import Base
 from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 import uuid
 
 
-requirements_has_ads = Table(
-    'requirements_has_ads',
+adds_skills = Table(
+    'adds_skills',
     Base.metadata,
-    Column('requirements_id', String, ForeignKey('requirements.id')),
+    Column('skill_id', String, ForeignKey('skills.id')),
     Column('ad_id', String, ForeignKey('ads.id')),
     Column('level', String), 
 )
 
-jobs_matches = Table(
-    'jobs_matches',
-    Base.metadata,
-    Column('ad_id', String(50), ForeignKey('ads.id')),
-    Column('professional_id', String(50), ForeignKey('professionals.id')),
-    Column('company_id', String(50), ForeignKey('companies.id')),
-    Column('approved', Boolean),
-)
+class DbJobsMatches(Base):
+    __tablename__ = 'jobs_matches'
+    ad_id = Column(String(50), ForeignKey('ads.id'), primary_key=True)
+    professional_id = Column(String(50), ForeignKey('professionals.id'), primary_key=True)
+    company_id = Column(String(50), ForeignKey('companies.id'))
+    approved = Column(Boolean)
+    professional = relationship('DbProfessionals', back_populates='match')
+    company = relationship('DbCompanies', back_populates='match')
+    ad = relationship('DbAds', back_populates='match')
+
 
 class DbUsers(Base):
     __tablename__ = 'users'
@@ -39,7 +41,8 @@ class DbProfessionals(Base):
     user = relationship('DbUsers', back_populates='professional')
     professional_info_id = Column(String(50), ForeignKey('professional_info.id'))
     professional_info = relationship('DbProfessionalInfo', back_populates='professional')
-    jobs_matches = relationship('DbAds', secondary=jobs_matches, backref='professional')
+    match = relationship('DbJobsMatches', back_populates='professional')
+    
 
 class DbCompanies(Base):
     __tablename__: str = 'companies'
@@ -49,8 +52,8 @@ class DbCompanies(Base):
     user = relationship('DbUsers', back_populates='company')
     company_info_id = Column(String(50), ForeignKey('company_info.id'))
     company_info = relationship('DbCompanyInfo', back_populates='company')
-    jobs_matches = relationship("DbAds", secondary=jobs_matches, backref="companies_related")
-    ads = relationship('DbAds', secondary=jobs_matches, backref='ads_associated')
+    match = relationship("DbJobsMatches", back_populates='company')
+    # ads = relationship('DbAds', secondary=DbJobsMatches, backref='ads_associated')
 
 class DbProfessionalInfo(Base):
     __tablename__: str = 'professional_info'
@@ -77,7 +80,7 @@ class DbInfo(Base):
     company_info = relationship('DbCompanyInfo', back_populates='info')
     professional_info = relationship('DbProfessionalInfo', back_populates='info')
     ad_id = Column(String(50), ForeignKey('ads.id'))
-    ads = relationship('DbAds', back_populates='info')
+    ad = relationship('DbAds', back_populates='info')
 
 class DbAds(Base):
     __tablename__: str = 'ads'
@@ -85,24 +88,24 @@ class DbAds(Base):
     description = Column(String)
     location = Column(String)
     status = Column(String)
-    salary_range_id = Column(String(50), ForeignKey('salary_range.id'))
-    salary_range = relationship('DbSalaryRange', back_populates='ads')
-    info = relationship('DbInfo', back_populates='ads')
-    requirements = relationship("DbRequirements", secondary=requirements_has_ads, backref="ads_associated")
-    companies = relationship('DbCompanies', secondary=jobs_matches, backref='ads_related')
+    salary_range_id = Column(String(50), ForeignKey('salary_ranges.id'))
+    salary_range = relationship('DbSalaryRanges', back_populates='ad')
+    info = relationship('DbInfo', back_populates='ad')
+    requirements = relationship("DbSkills", secondary=adds_skills, backref="ad_associated")
+    match = relationship('DbJobsMatches', back_populates='ad')
 
-class DbRequirements(Base):
-    __tablename__ = 'requirements'
+class DbSkills(Base):
+    __tablename__ = 'skills'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     name = Column(String)
-    ads = relationship("DbAds", secondary=requirements_has_ads, backref="requirements_associated")
+    ad = relationship("DbAds", secondary=adds_skills, backref="skills_associated")
 
-class DbSalaryRange(Base):
-    __tablename__: str = 'salary_range'
+class DbSalaryRanges(Base):
+    __tablename__: str = 'salary_ranges'
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     min = Column(String)
     max = Column(String)
-    ads = relationship('DbAds', back_populates='salary_range')
+    ad = relationship('DbAds', back_populates='salary_range')
 
 
 
