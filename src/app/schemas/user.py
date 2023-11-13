@@ -9,4 +9,3 @@ class UserCreate(BaseModel):
 class UserDisplay(BaseModel):
     username: str
     type: str
-
