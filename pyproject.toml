@@ -1,0 +1,12 @@
+[project]
+name = 'Job_Match'
+version = '0.1.0'
+description = ''
+readme = 'README.md'
+
+dependencies = [
+    'fastapi==0.104.1', 'sqlalchemy==2.0.23', 'uvicorn==0.24.0.post1'
+]
+
+[project.urls]
+Github = 'https://github.com/WEB-TeamProject-Group-4/job-match'
