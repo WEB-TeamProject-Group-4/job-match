@@ -15,10 +15,10 @@ requirements_has_ads = Table(
 jobs_matches = Table(
     'jobs_matches',
     Base.metadata,
-    Column('ad_id', String, ForeignKey('ads.id')),
-    Column('professional_id', String, ForeignKey('professionals.id')),
-    Column('company_id', String, ForeignKey('companies.id')),
-    Column('approved', Boolean), 
+    Column('ad_id', String(50), ForeignKey('ads.id')),
+    Column('professional_id', String(50), ForeignKey('professionals.id')),
+    Column('company_id', String(50), ForeignKey('companies.id')),
+    Column('approved', Boolean),
 )
 
 class DbUsers(Base):
@@ -39,7 +39,7 @@ class DbProfessionals(Base):
     user = relationship('DbUsers', back_populates='professional')
     professional_info_id = Column(String(50), ForeignKey('professional_info.id'))
     professional_info = relationship('DbProfessionalInfo', back_populates='professional')
-    jobs_matches = relationship("DbAds", secondary=jobs_matches, backref="professionals")
+    jobs_matches = relationship('DbAds', secondary=jobs_matches, backref='professional')
 
 class DbCompanies(Base):
     __tablename__: str = 'companies'
@@ -49,7 +49,8 @@ class DbCompanies(Base):
     user = relationship('DbUsers', back_populates='company')
     company_info_id = Column(String(50), ForeignKey('company_info.id'))
     company_info = relationship('DbCompanyInfo', back_populates='company')
-    jobs_matches = relationship("DbAds", secondary=jobs_matches, backref="companies")
+    jobs_matches = relationship("DbAds", secondary=jobs_matches, backref="companies_related")
+    ads = relationship('DbAds', secondary=jobs_matches, backref='ads_associated')
 
 class DbProfessionalInfo(Base):
     __tablename__: str = 'professional_info'
@@ -88,7 +89,7 @@ class DbAds(Base):
     salary_range = relationship('DbSalaryRange', back_populates='ads')
     info = relationship('DbInfo', back_populates='ads')
     requirements = relationship("DbRequirements", secondary=requirements_has_ads, backref="ads_associated")
-    jobs_matches = relationship("DbProfessionalInfo", secondary=jobs_matches, backref="ads")
+    companies = relationship('DbCompanies', secondary=jobs_matches, backref='ads_related')
 
 class DbRequirements(Base):
     __tablename__ = 'requirements'
