@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from app.db.database import get_db
 from app.db.models import DbUsers
-from app.core.security import Hash, create_access_token
+from app.core.security import create_access_token
+from app.core.hashing import Hash
 
 
 router = APIRouter()

@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.db.models import DbUsers
 from app.schemas.user import UserCreate
 from fastapi import HTTPException
-from app.core.security import Hash
+from app.core.hashing import Hash
 
 
 def create_db_user(db: Session, request: UserCreate):
