@@ -6,9 +6,10 @@ from app.schemas.professional import ProfessionalLoginDisplay, ProfessionalCreat
 from app.schemas.user import UserDisplay, UserCreate
 from typing import Annotated, List
 from app.db.database import get_db
+
 from app.crud.crud_user import create_db_user, create_db_professional, create_db_company
-from app.db.models import DbUsers, DbProfessionals, DbCompanies
-from app.core.security import get_current_user
+from app.db.models importDbUsers, DbProfessionals, DbCompanies
+from app.core.auth import get_current_user
 
 router = APIRouter()
 

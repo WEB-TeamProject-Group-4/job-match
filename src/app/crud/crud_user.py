@@ -3,7 +3,9 @@ from app.db.models import DbUsers, DbProfessionals, DbCompanies
 from app.schemas.company import CompanyCreate, CompanyLoginDisplay
 from app.schemas.professional import ProfessionalCreate, ProfessionalLoginDisplay
 from app.schemas.user import UserCreate
-from app.core.security import Hash
+
+from fastapi import HTTPException
+from app.core.hashing import Hash
 
 
 def create_db_user(db: Session, request: UserCreate):
