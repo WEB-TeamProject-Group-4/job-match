@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.user import UsernameDisplay
+
 
 class CompanyCreate(BaseModel):
     username: str
@@ -8,4 +10,10 @@ class CompanyCreate(BaseModel):
 
 
 class CompanyLoginDisplay(BaseModel):
+    username: str
+    name: str
+
+
+class CompanyDisplay(BaseModel):
+    user: UsernameDisplay
     name: str

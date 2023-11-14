@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.db.models import DbUsers, DbProfessionals, DbCompanies
-from app.schemas.company import CompanyCreate
-from app.schemas.professional import ProfessionalCreate
+from app.schemas.company import CompanyCreate, CompanyLoginDisplay
+from app.schemas.professional import ProfessionalCreate, ProfessionalLoginDisplay
 from app.schemas.user import UserCreate
 from app.core.security import Hash
 
@@ -37,8 +37,8 @@ def create_db_professional(db: Session, request: ProfessionalCreate):
     db.commit()
     db.refresh(new_professional)
 
-    return {"username": new_user.username, "first_name": new_professional.first_name,
-            "last_name": new_professional.last_name}
+    return ProfessionalLoginDisplay(username=new_user.username, first_name=new_professional.first_name,
+                                    last_name=new_professional.last_name)
 
 
 def create_db_company(db: Session, request: CompanyCreate):
@@ -59,4 +59,4 @@ def create_db_company(db: Session, request: CompanyCreate):
     db.commit()
     db.refresh(new_company)
 
-    return {"username": new_user.username, "name": new_company.name}
+    return CompanyLoginDisplay(username=new_user.username, name=new_company.name)
