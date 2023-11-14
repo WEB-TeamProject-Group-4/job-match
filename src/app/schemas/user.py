@@ -10,3 +10,6 @@ class UserDisplay(BaseModel):
     username: str
     type: str
 
+
+class UsernameDisplay(BaseModel):
+    username: str
