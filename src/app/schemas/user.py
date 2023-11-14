@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class UserCreate(BaseModel):
     username: str
     password: str
+    email: str
 
 
 class UserDisplay(BaseModel):

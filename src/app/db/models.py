@@ -28,8 +28,9 @@ class DbUsers(Base):
     id = Column(String(50), primary_key=True, default=str(uuid.uuid4()))
     username = Column(String)
     password = Column(String)
+    email = Column(String)
     type = Column(String)
-    is_activated = Column(Boolean)
+    is_verified = Column(Boolean)
     professional = relationship('DbProfessionals', back_populates='user')
     company = relationship('DbCompanies', back_populates='user')
 

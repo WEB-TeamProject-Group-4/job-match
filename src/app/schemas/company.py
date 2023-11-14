@@ -6,6 +6,7 @@ from app.schemas.user import UsernameDisplay
 class CompanyCreate(BaseModel):
     username: str
     password: str
+    email: str
     name: str
 
 
