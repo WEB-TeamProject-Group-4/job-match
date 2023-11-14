@@ -29,6 +29,7 @@ class DbUsers(Base):
     username = Column(String)
     password = Column(String)
     type = Column(String)
+    is_activated = Column(Boolean)
     professional = relationship('DbProfessionals', back_populates='user')
     company = relationship('DbCompanies', back_populates='user')
 
