@@ -15,18 +15,18 @@ router = APIRouter()
 
 
 @router.post('/users', response_model=UserDisplay)
-def create_user(request: UserCreate, db: Annotated[Session, Depends(get_db)]):
-    return create_db_user(db, request)
+async def create_user(request: UserCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_db_user(db, request)
 
 
 @router.post('/professionals', response_model=ProfessionalLoginDisplay)
-def create_professional(request: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
-    return create_db_professional(db, request)
+async def create_professional(request: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_db_professional(db, request)
 
 
 @router.post('/companies', response_model=CompanyLoginDisplay)
-def create_company(request: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
-    return create_db_company(db, request)
+async def create_company(request: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_db_company(db, request)
 
 
 @router.get('/users', response_model=List[UserDisplay])

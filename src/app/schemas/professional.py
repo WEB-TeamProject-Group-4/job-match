@@ -6,6 +6,7 @@ from app.schemas.user import UsernameDisplay
 class ProfessionalCreate(BaseModel):
     username: str
     password: str
+    email: str
     first_name: str
     last_name: str
 
