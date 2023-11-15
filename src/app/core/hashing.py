@@ -1,5 +1,7 @@
 import jwt
 from passlib.context import CryptContext
+
+from app.core.security import EMAIL_KEY
 from app.db.models import DbUsers
 from fastapi import HTTPException
 from jwt import PyJWTError
@@ -21,7 +23,7 @@ class Hash:
 async def very_token(token: str,
                      db: Session) -> DbUsers:
     try:
-        payload = jwt.decode(token, 'mnogosekretenkey', algorithms=['HS256'])
+        payload = jwt.decode(token, EMAIL_KEY, algorithms=['HS256'])
         user_id = payload.get('id')
         user = db.query(DbUsers).get(user_id)
 

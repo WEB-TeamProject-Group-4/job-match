@@ -4,7 +4,7 @@ from typing import List
 from app.db.models import DbUsers
 import jwt
 from app.core.config import settings
-
+from app.core.security import EMAIL_KEY, create_access_token
 
 config = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -29,7 +29,7 @@ async def send_email(email: List, instance: DbUsers):
         'username': instance.username
     }
 
-    token = jwt.encode(token_data, 'mnogosekretenkey', algorithm='HS256')
+    token = create_access_token(token_data, settings.EMAIL_TOKEN_EXPIRE_MINUTES, EMAIL_KEY)
     template = f'''
         <!DOCKTYPE html>
         <html>
@@ -66,4 +66,3 @@ async def send_email(email: List, instance: DbUsers):
 
     fm = FastMail(config)
     await fm.send_message(message=message)
-
