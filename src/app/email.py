@@ -3,18 +3,19 @@ from pydantic import BaseModel, EmailStr
 from typing import List
 from app.db.models import DbUsers
 import jwt
+from app.core.config import settings
 
 
 config = ConnectionConfig(
-    MAIL_USERNAME="g4jobshub@gmail.com",
-    MAIL_PASSWORD="hjxs yhvy fxrr prjq",
-    MAIL_FROM="g4jobshub@gmail.com",
+    MAIL_USERNAME=settings.MAIL_USERNAME,
+    MAIL_PASSWORD=settings.MAIL_PASSWORD,
+    MAIL_FROM=settings.MAIL_USERNAME,
     MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",
+    MAIL_SERVER=settings.MAIL_SERVER,
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True
+    VALIDATE_CERTS=settings.VALIDATE_CERTS
 )
 
 
