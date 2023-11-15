@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post('/login')
-def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
+async def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
           db: Annotated[Session, Depends(get_db)]):
     user = db.query(DbUsers).filter(DbUsers.username == request.username).first()
     if not user:
