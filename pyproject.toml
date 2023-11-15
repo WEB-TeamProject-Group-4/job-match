@@ -5,7 +5,9 @@ description = ''
 readme = 'README.md'
 
 dependencies = [
-    'fastapi==0.104.1', 'sqlalchemy==2.0.23', 'uvicorn==0.24.0.post1'
+    'fastapi==0.104.1', 'sqlalchemy==2.0.23', 'uvicorn==0.24.0.post1', 'bcrypt==4.0.1',
+    'fastapi-mail==1.4.1', 'passlib==1.7.4', 'pydantic-settings==2.0.3', 'pyjwt==2.8.0',
+    'pymysql==1.1.0', 'python-multipart==0.0.6'
 ]
 
 [project.urls]
