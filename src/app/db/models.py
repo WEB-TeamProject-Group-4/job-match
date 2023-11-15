@@ -56,7 +56,6 @@ class DbCompanies(Base):
     company_info_id = Column(String(50), ForeignKey('company_info.id'))
     company_info = relationship('DbCompanyInfo', back_populates='company')
     match = relationship("DbJobsMatches", back_populates='company')
-    # ads = relationship('DbAds', secondary=DbJobsMatches, backref='ads_associated')
 
 
 class DbProfessionalInfo(Base):

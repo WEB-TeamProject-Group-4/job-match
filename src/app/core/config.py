@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = 'job-match'
     DB_URL: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    EMAIL_TOKEN_EXPIRE_MINUTES: int
     ALGORITHM: str
     MAIL_USERNAME: str
     MAIL_PASSWORD: str

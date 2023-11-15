@@ -3,3 +3,4 @@ __pycache__/
 .vscode
 *.egg-info/
 *.env
+/tests/api_v1/endpoints/.pytest_cache/
