@@ -6,6 +6,9 @@ class UserCreate(BaseModel):
     password: str
     email: str
 
+    def get_type(self):
+        return 'admin'
+
 
 class UserDisplay(BaseModel):
     username: str
