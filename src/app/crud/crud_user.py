@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.db.models import DbUsers, DbProfessionals, DbCompanies
 from app.schemas.company import CompanyCreate, CompanyLoginDisplay
+from app.db.models import DbUsers, DbProfessionals, DbCompanies
 from app.schemas.professional import ProfessionalCreate, ProfessionalLoginDisplay
 from app.schemas.user import UserCreate
 from app.email import *

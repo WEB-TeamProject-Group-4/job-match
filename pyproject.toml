@@ -12,3 +12,8 @@ dependencies = [
 
 [project.urls]
 Github = 'https://github.com/WEB-TeamProject-Group-4/job-match'
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
