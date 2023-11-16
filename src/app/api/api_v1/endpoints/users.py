@@ -7,26 +7,26 @@ from app.schemas.user import UserDisplay, UserCreate
 from typing import Annotated, List
 from app.db.database import get_db
 
-from app.crud.crud_user import create_db_user, create_db_professional, create_db_company
 from app.db.models import DbUsers, DbProfessionals, DbCompanies
 from app.core.auth import get_current_user
+from app.crud.crud_user import create_user
 
 router = APIRouter()
 
 
 @router.post('/users', response_model=UserDisplay)
-async def create_user(request: UserCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_db_user(db, request)
+async def create_user_admin(request: UserCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_user(db, request)
 
 
 @router.post('/professionals', response_model=ProfessionalLoginDisplay)
 async def create_professional(request: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_db_professional(db, request)
+    return await create_user(db, request)
 
 
 @router.post('/companies', response_model=CompanyLoginDisplay)
 async def create_company(request: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_db_company(db, request)
+    return await create_user(db, request)
 
 
 @router.get('/users', response_model=List[UserDisplay])
