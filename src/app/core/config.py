@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, json_schema
+from pydantic import Field
 
 
 class Settings(BaseSettings):

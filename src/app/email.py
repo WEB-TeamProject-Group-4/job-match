@@ -58,7 +58,7 @@ async def send_email(email: List, instance: DbUsers):
         </html>
         '''
     message = MessageSchema(
-        subject='Job Match Account Verification Email',
+        subject='Account Verification Email',
         recipients=email,
         body=template,
         subtype='html'

@@ -1,20 +1,13 @@
-from pydantic import BaseModel
-
-from app.schemas.user import UsernameDisplay
+from app.schemas.user import UsernameDisplay, UserCreate
 
 
-class CompanyCreate(BaseModel):
-    username: str
-    password: str
-    email: str
+class CompanyCreate(UserCreate):
     name: str
 
+    @staticmethod
+    def get_type():
+        return 'company'
 
-class CompanyLoginDisplay(BaseModel):
-    username: str
-    name: str
 
-
-class CompanyDisplay(BaseModel):
-    user: UsernameDisplay
+class CompanyDisplay(UsernameDisplay):
     name: str

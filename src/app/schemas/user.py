@@ -4,16 +4,17 @@ from pydantic import BaseModel, EmailStr
 class UserCreate(BaseModel):
     username: str
     password: str
-    email: str
+    email: EmailStr
 
     def get_type(self):
         return 'admin'
 
 
-class UserDisplay(BaseModel):
+class UsernameDisplay(BaseModel):
     username: str
+
+
+class UserDisplay(UsernameDisplay):
     type: str
 
 
-class UsernameDisplay(BaseModel):
-    username: str
