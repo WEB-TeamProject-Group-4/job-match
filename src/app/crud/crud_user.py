@@ -36,7 +36,7 @@ class ProfessionalFactory(UserFactory[DbProfessionals]):
     @staticmethod
     async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
                           user_type: str) -> ProfessionalDisplay:
-        new_user = await UserFactory.create_user(db, request, "professional")
+        new_user = await UserFactory.create_db_user(db, request, "professional")
 
         new_professional = DbProfessionals(
             first_name=request.first_name,
@@ -56,7 +56,7 @@ class CompanyFactory(UserFactory[DbCompanies]):
     @staticmethod
     async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
                           user_type: str) -> CompanyDisplay:
-        new_user = await UserFactory.create_user(db, request, "company")
+        new_user = await UserFactory.create_db_user(db, request, "company")
 
         new_company = DbCompanies(
             name=request.name,
