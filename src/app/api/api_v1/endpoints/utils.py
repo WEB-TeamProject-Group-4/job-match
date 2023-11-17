@@ -14,7 +14,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory='app/templates')
 
 
-@router.get('/verification', response_class=HTMLResponse)
+@router.get('/verification', response_class=HTMLResponse, include_in_schema=False)
 async def email_verification(request: Request, token: str,
                              db: Annotated[Session, Depends(get_db)]):
     user = await very_token(token, db)

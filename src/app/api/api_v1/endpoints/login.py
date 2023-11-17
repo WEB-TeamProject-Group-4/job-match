@@ -11,7 +11,7 @@ from app.core.hashing import Hash
 router = APIRouter()
 
 
-@router.post('/login')
+@router.post('/login', include_in_schema=False)
 async def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
           db: Annotated[Session, Depends(get_db)]):
     user = db.query(DbUsers).filter(DbUsers.username == request.username).first()
