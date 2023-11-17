@@ -1,9 +1,10 @@
-from app.crud.crud_user import create_db_user
-from app.schemas.user import UserCreate
 import pytest
-from unittest.mock import patch
-from app.db.database import get_db
-from app.db.models import DbUsers
+import app.crud.crud_user as crud_user
+from app.schemas.company import CompanyCreate
+from app.schemas.professional import ProfessionalCreate
+from app.schemas.user import UserCreate
+from app.db.models import DbCompanies, DbProfessionals, DbUsers
+
 
 user = UserCreate(
     username='dummyusername',
@@ -12,51 +13,117 @@ user = UserCreate(
 )
 
 
-def create_dummy_db_user(user_type: str):
-    return DbUsers(
-        username=user.username,
-        password=user.password,
-        email=user.email,
-        type=user_type
-    )
+professional = ProfessionalCreate(
+    username='Prof',
+    password='profpassword',
+    email='professional@mail.com',
+    first_name='TestFirstName',
+    last_name='TestLastName'
+)
 
 
-@pytest.fixture(scope='module')
-def mock_create_user():
-    with patch('app.crud.crud_user.create_user') as mock_create_user:
-        mock_create_user.return_value = create_dummy_db_user('admin')
-        yield mock_create_user
+company = CompanyCreate(
+    username='CompanyUsername',
+    password='companypassword',
+    email='company@mail.com',
+    name='TestCompany'
+)
 
 
-@pytest.fixture(scope='module')
-def mock_create_professional():
-    with patch('app.crud.crud_user.create_user') as mock_create_professional:
-        mock_create_company.return_value = create_db_user('professional')
-        yield mock_create_professional
-
-
-@pytest.fixture
-def mock_create_company(scope='module'):
-    with patch('app.crud.crud_user.create_user') as mock_create_company:
-        mock_create_company.return_value = create_db_user('company')
-        yield mock_create_company
-
-
-@pytest.fixture
-def mock_send_email(scope='module'):
-    with patch('app.crud.crud_user.send_email') as mock_send_email:
-        yield mock_send_email
+def create_test_user(user_type: str):
+    if user_type == 'admin':
+        return DbUsers(
+            id = 'test-user-id-uuid',
+            username=user.username,
+            password=user.password,
+            email=user.email,
+            type=user_type
+        )
+    
+    elif user_type == 'professional':
+        return DbProfessionals(
+            first_name=professional.first_name,
+            last_name=professional.last_name,
+            user_id='test-user-id-uuid'
+        )
+    
+    elif user_type =='company':
+        return DbCompanies(
+            name='TestCompany',
+            user_id='test-user-id-uuid'
+        )
 
 
 @pytest.mark.asyncio
-async def test_create_db_user(mock_send_email, mock_create_user):
-    db = get_db()
+@pytest.mark.parametrize("user_type, expected_factory", [
+    ('admin', crud_user.UserFactory),
+    ('professional', crud_user.ProfessionalFactory),
+    ('company', crud_user.CompanyFactory),
+    ('else', crud_user.UserFactory)
+])
+async def test_create_user_factory(user_type, expected_factory):
+    result = crud_user.create_user_factory(user_type)
+    assert result == expected_factory
 
-    result = await create_db_user(db, user)
 
-    mock_create_user.assert_called_once_with(db, user, "admin")
-    mock_send_email.assert_called_once_with([user.email], mock_create_user.return_value)
+@pytest.mark.asyncio
+async def test_create_user_returnsAdmin(db, mocker) -> DbUsers:
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.UserFactory())
+    mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
+    mocker.patch('app.crud.crud_user.send_email', return_value=None)
+    
+    result = await crud_user.create_user(db, user)
+
+    mock_create_user_factory.assert_called_once_with("admin")
+
+    assert result.username == 'dummyusername'
+    assert result.password == 'dummypassword'
+    assert result.email == 'dummyemail@mail.com'
+    assert result.type == 'admin'
+    assert result.id == 'test-user-id-uuid'
+
+
+@pytest.mark.asyncio
+async def test_create_user_returnsProfessional(db, mocker) -> DbProfessionals:
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.ProfessionalFactory())
+    mocker.patch('app.crud.crud_user.ProfessionalFactory.create_db_user', return_value=create_test_user('professional'))
+    mocker.patch('app.crud.crud_user.send_email', return_value=None)
+    
+    result = await crud_user.create_user(db, professional)
+
+    mock_create_user_factory.assert_called_once_with("professional")
+
+    assert result.first_name == professional.first_name
+    assert result.last_name == professional.last_name
+    assert result.user_id == 'test-user-id-uuid'
+
+
+@pytest.mark.asyncio
+async def test_create_user_returnsCompany(db, mocker) -> DbCompanies:
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.CompanyFactory())
+    mocker.patch('app.crud.crud_user.CompanyFactory.create_db_user', return_value=create_test_user('company'))
+    mocker.patch('app.crud.crud_user.send_email', return_value=None)
+    
+    result = await crud_user.create_user(db, company)
+
+    mock_create_user_factory.assert_called_once_with("company")
+
+    assert result.name == company.name
+    assert result.user_id == 'test-user-id-uuid'
+
+
+
+@pytest.mark.asyncio
+async def test_user_factory_create_db_user_returnsAdmin(db, mocker) -> DbUsers:
+    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
+
+    result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
+
     assert result.username == user.username
     assert result.password == user.password
     assert result.email == user.email
     assert result.type == 'admin'
+
+
+
+

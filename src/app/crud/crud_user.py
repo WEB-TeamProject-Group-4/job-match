@@ -14,7 +14,7 @@ UserModelType = TypeVar("UserModelType", bound=DbUsers)
 
 class UserFactory(Generic[UserModelType]):
     @staticmethod
-    async def create_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
                           user_type: str) -> UserModelType:
         new_user = DbUsers(
             username=request.username,
@@ -34,9 +34,9 @@ class UserFactory(Generic[UserModelType]):
 
 class ProfessionalFactory(UserFactory[DbProfessionals]):
     @staticmethod
-    async def create_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
                           user_type: str) -> ProfessionalDisplay:
-        new_user = await UserFactory.create_user(db, request, "professional")
+        new_user = await UserFactory.create_db_user(db, request, "professional")
 
         new_professional = DbProfessionals(
             first_name=request.first_name,
@@ -54,9 +54,9 @@ class ProfessionalFactory(UserFactory[DbProfessionals]):
 
 class CompanyFactory(UserFactory[DbCompanies]):
     @staticmethod
-    async def create_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
                           user_type: str) -> CompanyDisplay:
-        new_user = await UserFactory.create_user(db, request, "company")
+        new_user = await UserFactory.create_db_user(db, request, "company")
 
         new_company = DbCompanies(
             name=request.name,
@@ -89,5 +89,5 @@ def create_user_factory(user_type: str) -> Type[UserFactory]:
 async def create_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate]) -> UserModelType:
     user_type = request.get_type()
     factory = create_user_factory(user_type)
-    new_user = await factory.create_user(db, request, user_type)
+    new_user = await factory.create_db_user(db, request, user_type)
     return new_user
