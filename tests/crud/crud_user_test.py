@@ -1,8 +1,10 @@
+from fastapi import HTTPException
 import pytest
 import app.crud.crud_user as crud_user
-from app.schemas.company import CompanyCreate
-from app.schemas.professional import ProfessionalCreate
+from app.schemas.company import CompanyCreate, CompanyDisplay
+from app.schemas.professional import ProfessionalCreate, ProfessionalDisplay
 from app.schemas.user import UserCreate
+from sqlalchemy.exc import IntegrityError
 from app.db.models import DbCompanies, DbProfessionals, DbUsers
 
 
@@ -55,13 +57,99 @@ def create_test_user(user_type: str):
 
 
 @pytest.mark.asyncio
+async def test_user_factory_create_db_user_returnsAdmin(db, mocker):
+    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
+
+    result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
+
+    assert result.username == user.username
+    assert result.password == user.password
+    assert result.email == user.email
+    assert result.type == 'admin'
+
+
+@pytest.mark.asyncio
+async def test_user_factory_create_db_user_returnsProfessional(db, mocker):
+    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
+
+    result = await crud_user.UserFactory.create_db_user(db, user, 'professional')
+
+    assert result.username == user.username
+    assert result.password == user.password
+    assert result.email == user.email
+    assert result.type == 'professional'
+
+
+@pytest.mark.asyncio
+async def test_user_factory_create_db_user_returnsCompany(db, mocker):
+    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
+
+    result = await crud_user.UserFactory.create_db_user(db, user, 'company')
+
+    assert result.username == user.username
+    assert result.password == user.password
+    assert result.email == user.email
+    assert result.type == 'company'
+
+
+@pytest.mark.asyncio
+async def test_user_factory_create_db_user_risesHTTPException(db, mocker):
+    mocker.patch.object(db, 'commit', side_effect=IntegrityError("", params=None, orig=None))
+
+    with pytest.raises(HTTPException) as exception:
+        result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
+
+    exception_info = exception.value
+    assert exception_info.status_code == 409
+    db.add.assert_called_once()
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_professional_factory_create_db_user(db, mocker) -> ProfessionalDisplay:
+    mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
+    mocker.patch('app.crud.crud_user.send_email', return_value=None)
+
+    result = await crud_user.ProfessionalFactory.create_db_user(db, professional, 'professional')
+
+    assert result.username == user.username
+    assert result.first_name == professional.first_name
+    assert result.last_name == professional.last_name
+
+
+@pytest.mark.asyncio
+async def test_company_factory_create_db_user_success(db, mocker) -> CompanyDisplay:
+    mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
+    mocker.patch('app.crud.crud_user.send_email', return_value=None)
+
+    result = await crud_user.CompanyFactory.create_db_user(db, company, 'company')
+
+    assert result.username == user.username
+    assert result.name == company.name
+
+
+@pytest.mark.asyncio
+async def test_company_factory_create_db_user_risesHTTPError(db, mocker) -> CompanyDisplay:
+    mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
+    mocker.patch.object(db, 'add', side_effect=IntegrityError("", params=None, orig=None))
+    
+
+    with pytest.raises(HTTPException) as exception:
+        result = await crud_user.CompanyFactory.create_db_user(db, company, 'company')
+
+    exception_info = exception.value
+    assert exception_info.status_code == 409
+    db.add.assert_called_once()
+
+    
+
 @pytest.mark.parametrize("user_type, expected_factory", [
     ('admin', crud_user.UserFactory),
     ('professional', crud_user.ProfessionalFactory),
     ('company', crud_user.CompanyFactory),
     ('else', crud_user.UserFactory)
 ])
-async def test_create_user_factory(user_type, expected_factory):
+def test_create_user_factory(user_type, expected_factory):
     result = crud_user.create_user_factory(user_type)
     assert result == expected_factory
 
@@ -110,20 +198,3 @@ async def test_create_user_returnsCompany(db, mocker) -> DbCompanies:
 
     assert result.name == company.name
     assert result.user_id == 'test-user-id-uuid'
-
-
-
-@pytest.mark.asyncio
-async def test_user_factory_create_db_user_returnsAdmin(db, mocker) -> DbUsers:
-    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
-
-    result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
-
-    assert result.username == user.username
-    assert result.password == user.password
-    assert result.email == user.email
-    assert result.type == 'admin'
-
-
-
-
