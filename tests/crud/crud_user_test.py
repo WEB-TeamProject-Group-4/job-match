@@ -1,11 +1,8 @@
+import pytest
 import app.crud.crud_user as crud_user
 from app.schemas.company import CompanyCreate
 from app.schemas.professional import ProfessionalCreate
 from app.schemas.user import UserCreate
-import pytest
-from sqlalchemy.orm import Session
-from unittest.mock import MagicMock, patch
-from app.db.database import get_db
 from app.db.models import DbCompanies, DbProfessionals, DbUsers
 
 
@@ -31,11 +28,6 @@ company = CompanyCreate(
     email='company@mail.com',
     name='TestCompany'
 )
-
-
-@pytest.fixture
-def db():
-    return MagicMock(spec=Session)
 
 
 def create_test_user(user_type: str):
@@ -119,6 +111,18 @@ async def test_create_user_returnsCompany(db, mocker) -> DbCompanies:
     assert result.name == company.name
     assert result.user_id == 'test-user-id-uuid'
 
+
+
+@pytest.mark.asyncio
+async def test_user_factory_create_db_user_returnsAdmin(db, mocker) -> DbUsers:
+    mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
+
+    result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
+
+    assert result.username == user.username
+    assert result.password == user.password
+    assert result.email == user.email
+    assert result.type == 'admin'
 
 
 
