@@ -1,4 +1,4 @@
-import app.crud.crud_user as crud
+import app.crud.crud_user as crud_user
 from app.schemas.company import CompanyCreate
 from app.schemas.professional import ProfessionalCreate
 from app.schemas.user import UserCreate
@@ -64,23 +64,23 @@ def create_test_user(user_type: str):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("user_type, expected_factory", [
-    ('admin', crud.UserFactory),
-    ('professional', crud.ProfessionalFactory),
-    ('company', crud.CompanyFactory),
-    ('else', crud.UserFactory)
+    ('admin', crud_user.UserFactory),
+    ('professional', crud_user.ProfessionalFactory),
+    ('company', crud_user.CompanyFactory),
+    ('else', crud_user.UserFactory)
 ])
 async def test_create_user_factory(user_type, expected_factory):
-    result = crud.create_user_factory(user_type)
+    result = crud_user.create_user_factory(user_type)
     assert result == expected_factory
 
 
 @pytest.mark.asyncio
 async def test_create_user_returnsAdmin(db, mocker) -> DbUsers:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud.UserFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.UserFactory())
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
     
-    result = await crud.create_user(db, user)
+    result = await crud_user.create_user(db, user)
 
     mock_create_user_factory.assert_called_once_with("admin")
 
@@ -93,11 +93,11 @@ async def test_create_user_returnsAdmin(db, mocker) -> DbUsers:
 
 @pytest.mark.asyncio
 async def test_create_user_returnsProfessional(db, mocker) -> DbProfessionals:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud.ProfessionalFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.ProfessionalFactory())
     mocker.patch('app.crud.crud_user.ProfessionalFactory.create_db_user', return_value=create_test_user('professional'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
     
-    result = await crud.create_user(db, professional)
+    result = await crud_user.create_user(db, professional)
 
     mock_create_user_factory.assert_called_once_with("professional")
 
@@ -108,13 +108,18 @@ async def test_create_user_returnsProfessional(db, mocker) -> DbProfessionals:
 
 @pytest.mark.asyncio
 async def test_create_user_returnsCompany(db, mocker) -> DbCompanies:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud.CompanyFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.CompanyFactory())
     mocker.patch('app.crud.crud_user.CompanyFactory.create_db_user', return_value=create_test_user('company'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
     
-    result = await crud.create_user(db, company)
+    result = await crud_user.create_user(db, company)
 
     mock_create_user_factory.assert_called_once_with("company")
 
     assert result.name == company.name
     assert result.user_id == 'test-user-id-uuid'
+
+
+
+
+
