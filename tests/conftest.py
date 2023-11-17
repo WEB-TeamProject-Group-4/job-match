@@ -3,6 +3,6 @@ from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def db():
     return MagicMock(spec=Session)
