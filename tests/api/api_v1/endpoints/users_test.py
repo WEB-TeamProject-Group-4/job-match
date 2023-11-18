@@ -5,25 +5,24 @@ from app.db.models import DbUsers
 from app.schemas.user import UserCreate
 from src.app.main import app
 
-
 client = TestClient(app)
 
 
-def  create_user():
+def create_user():
     return DbUsers(
-            username='TestUser',
-            password='TestPassword',
-            email='test.email@email.com',
-            type='admin'
-        )
+        username='TestUser',
+        password='TestPassword',
+        email='test.email@email.com',
+        type='admin'
+    )
 
-@pytest.mark.asyncio
+
 def test_create_user_admin_success(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
-        'username':'TestUser',
-        'password':'TestPassword',
-        'email':'test.email@email.com'
+        'username': 'TestUser',
+        'password': 'TestPassword',
+        'email': 'test.email@email.com'
     }
     response = client.post('/users', json=new_user)
     data = response.json()
@@ -33,7 +32,6 @@ def test_create_user_admin_success(mocker):
     assert data['username'] == 'TestUser'
 
 
-@pytest.mark.asyncio
 def test_create_user_admin_missingBody(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     response = client.post('/users')
@@ -43,12 +41,11 @@ def test_create_user_admin_missingBody(mocker):
     assert data['detail'][0]['loc'] == ['body']
 
 
-@pytest.mark.asyncio
 def test_create_user_admin_missingEmail(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
-        'username':'TestUser',
-        'password':'TestPassword'
+        'username': 'TestUser',
+        'password': 'TestPassword'
     }
     response = client.post('/users', json=new_user)
     data = response.json()
@@ -57,12 +54,11 @@ def test_create_user_admin_missingEmail(mocker):
     assert data['detail'][0]['loc'] == ['body', 'email']
 
 
-@pytest.mark.asyncio
 def test_create_user_admin_missingUsername(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
-        'password':'TestPassword',
-        'email':'test.email@email.com'
+        'password': 'TestPassword',
+        'email': 'test.email@email.com'
     }
     response = client.post('/users', json=new_user)
     data = response.json()
@@ -71,12 +67,11 @@ def test_create_user_admin_missingUsername(mocker):
     assert data['detail'][0]['loc'] == ['body', 'username']
 
 
-@pytest.mark.asyncio
 def test_create_user_admin_missingPassword(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
-        'username':'TestUser',
-        'email':'test.email@email.com'
+        'username': 'TestUser',
+        'email': 'test.email@email.com'
     }
     response = client.post('/users', json=new_user)
     data = response.json()
@@ -85,20 +80,18 @@ def test_create_user_admin_missingPassword(mocker):
     assert data['detail'][0]['loc'] == ['body', 'password']
 
 
-@pytest.mark.asyncio
 def test_create_user_admin_invalidEmail(mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
-        'username':'TestUser',
-        'password':'TestPassword',
-        'email':'test.emailemail.com'
+        'username': 'TestUser',
+        'password': 'TestPassword',
+        'email': 'test.emailemail.com'
     }
     response = client.post('/users', json=new_user)
     data = response.json()
 
     assert response.status_code == 422
     assert data['detail'][0]['loc'] == ['body', 'email']
-
 
 
 @pytest.mark.asyncio
@@ -118,4 +111,4 @@ async def test_get_users_success(db, mocker):
     data = response.json()
 
     assert response.status_code == 401
-    assert data['detail'] == 'Not authenticated'
+    assert data['detail'] == 'Could not validate credentials'

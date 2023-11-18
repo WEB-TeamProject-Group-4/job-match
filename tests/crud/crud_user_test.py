@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 import pytest
 import app.crud.crud_user as crud_user
-from app.schemas.company import CompanyCreate, CompanyDisplay
-from app.schemas.professional import ProfessionalCreate, ProfessionalDisplay
+from app.schemas.company import CompanyCreate, CompanyCreateDisplay
+from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay
 from app.schemas.user import UserCreate
 from sqlalchemy.exc import IntegrityError
 from app.db.models import DbCompanies, DbProfessionals, DbUsers
@@ -106,7 +106,7 @@ async def test_user_factory_create_db_user_risesHTTPException(db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_professional_factory_create_db_user(db, mocker) -> ProfessionalDisplay:
+async def test_professional_factory_create_db_user(db, mocker) -> ProfessionalCreateDisplay:
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
 
@@ -118,7 +118,7 @@ async def test_professional_factory_create_db_user(db, mocker) -> ProfessionalDi
 
 
 @pytest.mark.asyncio
-async def test_company_factory_create_db_user_success(db, mocker) -> CompanyDisplay:
+async def test_company_factory_create_db_user_success(db, mocker) -> CompanyCreateDisplay:
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
 
@@ -129,7 +129,7 @@ async def test_company_factory_create_db_user_success(db, mocker) -> CompanyDisp
 
 
 @pytest.mark.asyncio
-async def test_company_factory_create_db_user_risesHTTPError(db, mocker) -> CompanyDisplay:
+async def test_company_factory_create_db_user_risesHTTPError(db, mocker) -> CompanyCreateDisplay:
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch.object(db, 'add', side_effect=IntegrityError("", params=None, orig=None))
     

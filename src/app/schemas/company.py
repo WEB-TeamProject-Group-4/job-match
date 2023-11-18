@@ -9,6 +9,11 @@ class CompanyCreate(UserCreate):
     def get_type():
         return 'company'
 
+
+class CompanyCreateDisplay(UsernameDisplay):
+    name: str
+
+
 class CompanyDisplay(BaseModel):
     user: UsernameDisplay
     name: str

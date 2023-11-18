@@ -10,6 +10,12 @@ class ProfessionalCreate(UserCreate):
     def get_type():
         return 'professional'
 
+
+class ProfessionalCreateDisplay(UsernameDisplay):
+    first_name: str
+    last_name: str
+
+
 class ProfessionalDisplay(BaseModel):
     user: UsernameDisplay
     first_name: str
