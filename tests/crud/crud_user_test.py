@@ -7,13 +7,11 @@ from app.schemas.user import UserCreate
 from sqlalchemy.exc import IntegrityError
 from app.db.models import DbCompanies, DbProfessionals, DbUsers
 
-
 user = UserCreate(
     username='dummyusername',
     password='dummypassword',
     email='dummyemail@mail.com'
 )
-
 
 professional = ProfessionalCreate(
     username='Prof',
@@ -22,7 +20,6 @@ professional = ProfessionalCreate(
     first_name='TestFirstName',
     last_name='TestLastName'
 )
-
 
 company = CompanyCreate(
     username='CompanyUsername',
@@ -35,21 +32,21 @@ company = CompanyCreate(
 def create_test_user(user_type: str):
     if user_type == 'admin':
         return DbUsers(
-            id = 'test-user-id-uuid',
+            id='test-user-id-uuid',
             username=user.username,
             password=user.password,
             email=user.email,
             type=user_type
         )
-    
+
     elif user_type == 'professional':
         return DbProfessionals(
             first_name=professional.first_name,
             last_name=professional.last_name,
             user_id='test-user-id-uuid'
         )
-    
-    elif user_type =='company':
+
+    elif user_type == 'company':
         return DbCompanies(
             name='TestCompany',
             user_id='test-user-id-uuid'
@@ -132,7 +129,6 @@ async def test_company_factory_create_db_user_success(db, mocker) -> CompanyCrea
 async def test_company_factory_create_db_user_risesHTTPError(db, mocker) -> CompanyCreateDisplay:
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch.object(db, 'add', side_effect=IntegrityError("", params=None, orig=None))
-    
 
     with pytest.raises(HTTPException) as exception:
         result = await crud_user.CompanyFactory.create_db_user(db, company, 'company')
@@ -141,7 +137,6 @@ async def test_company_factory_create_db_user_risesHTTPError(db, mocker) -> Comp
     assert exception_info.status_code == 409
     db.add.assert_called_once()
 
-    
 
 @pytest.mark.parametrize("user_type, expected_factory", [
     ('admin', crud_user.UserFactory),
@@ -156,10 +151,11 @@ def test_create_user_factory(user_type, expected_factory):
 
 @pytest.mark.asyncio
 async def test_create_user_returnsAdmin(db, mocker) -> DbUsers:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.UserFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory',
+                                            return_value=crud_user.UserFactory())
     mocker.patch('app.crud.crud_user.UserFactory.create_db_user', return_value=create_test_user('admin'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
-    
+
     result = await crud_user.create_user(db, user)
 
     mock_create_user_factory.assert_called_once_with("admin")
@@ -173,10 +169,11 @@ async def test_create_user_returnsAdmin(db, mocker) -> DbUsers:
 
 @pytest.mark.asyncio
 async def test_create_user_returnsProfessional(db, mocker) -> DbProfessionals:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.ProfessionalFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory',
+                                            return_value=crud_user.ProfessionalFactory())
     mocker.patch('app.crud.crud_user.ProfessionalFactory.create_db_user', return_value=create_test_user('professional'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
-    
+
     result = await crud_user.create_user(db, professional)
 
     mock_create_user_factory.assert_called_once_with("professional")
@@ -188,10 +185,11 @@ async def test_create_user_returnsProfessional(db, mocker) -> DbProfessionals:
 
 @pytest.mark.asyncio
 async def test_create_user_returnsCompany(db, mocker) -> DbCompanies:
-    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory', return_value=crud_user.CompanyFactory())
+    mock_create_user_factory = mocker.patch('app.crud.crud_user.create_user_factory',
+                                            return_value=crud_user.CompanyFactory())
     mocker.patch('app.crud.crud_user.CompanyFactory.create_db_user', return_value=create_test_user('company'))
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
-    
+
     result = await crud_user.create_user(db, company)
 
     mock_create_user_factory.assert_called_once_with("company")
