@@ -1,7 +1,6 @@
 import pytest
 from fastapi import HTTPException
 from jwt import PyJWTError
-
 from app.core.hashing import Hash, very_token
 from app.db.models import DbUsers
 
@@ -16,19 +15,19 @@ def test_hash():
 
 
 @pytest.mark.asyncio
-async def test_very_token_success(db, mocker):
+async def test_very_token_success(db, mocker, test_db):
     mocker.patch('app.core.hashing.jwt.decode', return_value={"id": 'test_id', "username": "test_username"})
 
     mock_user = DbUsers(
         id='test_id',
         username='test_username',
         password='test_password',
+        email='dummyEmail',
         type='test_type'
     )
 
-    mock_query = mocker.MagicMock()
-    mock_query.get.return_value = mock_user
-    mocker.patch.object(db, 'query', return_value=mock_query)
+    db.add(mock_user)
+    db.commit()
 
     result = await very_token('dummy_token', db)
 

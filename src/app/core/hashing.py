@@ -1,3 +1,5 @@
+from typing import Type
+
 import jwt
 from passlib.context import CryptContext
 
@@ -21,11 +23,11 @@ class Hash:
 
 
 async def very_token(token: str,
-                     db: Session) -> DbUsers:
+                     db: Session) -> Type[DbUsers] | None:
     try:
         payload = jwt.decode(token, EMAIL_KEY, algorithms=['HS256'])
         user_id = payload.get('id')
-        user = db.query(DbUsers).get(user_id)
+        user = db.get(DbUsers, user_id)
 
     except PyJWTError:
         raise HTTPException(
