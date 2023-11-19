@@ -1,11 +1,6 @@
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
 import pytest
 from app.db.models import DbUsers
-from app.schemas.user import UserCreate
-from src.app.main import app
-
-client = TestClient(app)
+from fastapi.testclient import TestClient
 
 
 def create_user():
@@ -17,7 +12,7 @@ def create_user():
     )
 
 
-def test_create_user_admin_success(mocker):
+def test_create_user_admin_success(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -32,7 +27,7 @@ def test_create_user_admin_success(mocker):
     assert data['username'] == 'TestUser'
 
 
-def test_create_user_admin_missingBody(mocker):
+def test_create_user_admin_missingBody(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     response = client.post('/users')
     data = response.json()
@@ -41,7 +36,7 @@ def test_create_user_admin_missingBody(mocker):
     assert data['detail'][0]['loc'] == ['body']
 
 
-def test_create_user_admin_missingEmail(mocker):
+def test_create_user_admin_missingEmail(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -54,7 +49,7 @@ def test_create_user_admin_missingEmail(mocker):
     assert data['detail'][0]['loc'] == ['body', 'email']
 
 
-def test_create_user_admin_missingUsername(mocker):
+def test_create_user_admin_missingUsername(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'password': 'TestPassword',
@@ -67,7 +62,7 @@ def test_create_user_admin_missingUsername(mocker):
     assert data['detail'][0]['loc'] == ['body', 'username']
 
 
-def test_create_user_admin_missingPassword(mocker):
+def test_create_user_admin_missingPassword(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -80,7 +75,7 @@ def test_create_user_admin_missingPassword(mocker):
     assert data['detail'][0]['loc'] == ['body', 'password']
 
 
-def test_create_user_admin_invalidEmail(mocker):
+def test_create_user_admin_invalidEmail(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -95,7 +90,7 @@ def test_create_user_admin_invalidEmail(mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_users_notAuthenticated():
+async def test_get_users_notAuthenticated(client: TestClient):
     response = client.get('/users')
     data = response.json()
 
@@ -104,8 +99,7 @@ async def test_get_users_notAuthenticated():
 
 
 @pytest.mark.asyncio
-async def test_get_users_success(db, mocker):
-    mocker.patch.object(db, 'query', return_value=[])
+async def test_get_users_success(client: TestClient, mocker):
     mocker.patch('app.core.auth.get_current_user', return_value=create_user())
     response = client.get('/users', headers={"Authorization": "Bearer valid_token_here"})
     data = response.json()

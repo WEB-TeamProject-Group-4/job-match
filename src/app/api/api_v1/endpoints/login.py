@@ -7,13 +7,12 @@ from app.db.models import DbUsers
 from app.core.security import create_access_token
 from app.core.hashing import Hash
 
-
 router = APIRouter()
 
 
 @router.post('/login', include_in_schema=False)
 async def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
-          db: Annotated[Session, Depends(get_db)]):
+                db: Annotated[Session, Depends(get_db)]):
     user = db.query(DbUsers).filter(DbUsers.username == request.username).first()
     if not user:
         raise HTTPException(
