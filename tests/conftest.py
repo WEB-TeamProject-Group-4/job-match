@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from app.db.database import get_db, Base
 from app.main import app
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
@@ -12,10 +13,10 @@ def db() -> Session:
     return TestingSessionLocal()
 
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///tests/test.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

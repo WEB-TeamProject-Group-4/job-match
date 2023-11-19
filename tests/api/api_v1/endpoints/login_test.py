@@ -13,8 +13,7 @@ db_user = DbUsers(
 )
 
 
-@pytest.mark.asyncio
-async def test_login(client: TestClient, db, mocker, test_db):
+def test_login(client: TestClient, test_db, db, mocker):
     mocker.patch('app.api.api_v1.endpoints.login.Hash.verify', return_value=True)
     mocker.patch('app.api.api_v1.endpoints.login.create_access_token', return_value='valid_token')
 
