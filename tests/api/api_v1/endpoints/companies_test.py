@@ -29,6 +29,8 @@ def create_company() -> CompanyCreateDisplay:
 
 def test_create_company_success(client: TestClient, test_db, db, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_company())
+    mocker.patch('app.crud.crud_user.send_email')
+
 
     new_company = {
         "username": "TestCompany",

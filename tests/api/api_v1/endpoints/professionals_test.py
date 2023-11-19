@@ -24,6 +24,7 @@ def create_professional() -> ProfessionalCreateDisplay:
 
 def test_create_professional_success(client: TestClient, test_db, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_professional())
+    mocker.patch('app.crud.crud_user.send_email')
 
     new_professional = {
         "username": "TestUser",
