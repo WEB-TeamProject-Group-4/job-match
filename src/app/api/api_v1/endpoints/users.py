@@ -19,7 +19,7 @@ async def create_user_admin(request: UserCreate, db: Annotated[Session, Depends(
 @router.get('/users', response_model=List[UserDisplay])
 def get_users(db: Annotated[Session, Depends(get_db)],
               current_user: Annotated[UserDisplay, Depends(get_current_user)]):
-    users = db.query(DbUsers).all()
+    users = db.query(DbUsers).filter(DbUsers.is_verified == 1).all()
     return users
 
 

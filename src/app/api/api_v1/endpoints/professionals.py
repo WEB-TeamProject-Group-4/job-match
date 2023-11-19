@@ -4,7 +4,7 @@ from app.core.auth import get_current_user
 from app.crud.crud_user import create_user
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.db.models import DbProfessionals
+from app.db.models import DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay
 from app.schemas.user import UserDisplay
 
@@ -20,5 +20,5 @@ async def create_professional(request: ProfessionalCreate, db: Annotated[Session
 @router.get('/professionals', response_model=List[ProfessionalDisplay])
 def get_professionals(db: Annotated[Session, Depends(get_db)],
                       current_user: Annotated[UserDisplay, Depends(get_current_user)]):
-    professionals = db.query(DbProfessionals).all()
+    professionals = db.query(DbProfessionals).join(DbProfessionals.user).filter(DbUsers.is_verified == 1).all()
     return professionals
