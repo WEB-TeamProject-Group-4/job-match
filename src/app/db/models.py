@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary, Null, INT
+from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary, INT
 from sqlalchemy.orm import relationship
 import uuid
 
