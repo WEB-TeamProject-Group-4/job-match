@@ -6,16 +6,16 @@ from fastapi.testclient import TestClient
 
 from app.db.models import DbUsers
 
-db_user = DbUsers(
-    username='TestUser',
-    password='TestPassword',
-    email='test.email@email.com',
-    type='admin',
-    is_verified=False
-)
-
 
 def test_email_verification_success(client: TestClient, test_db, db, mocker):
+    db_user = DbUsers(
+        username='TestUser',
+        password='TestPassword',
+        email='test.email@email.com',
+        type='admin',
+        is_verified=False
+    )
+
     db.add(db_user)
     db.commit()
 
@@ -28,9 +28,6 @@ def test_email_verification_success(client: TestClient, test_db, db, mocker):
     assert response.status_code == 200
     assert "<html>Verification Successful</html>" in response.text
     assert db_user.is_verified
-
-    # response = client.get('/verification', params={'token': 'valid_token'})
-    # assert response.status_code == 200
 
 
 def test_email_verification_already_verified(client: TestClient, test_db, db, mocker):
@@ -60,6 +57,15 @@ def test_email_verification_invalid_token(client: TestClient, mocker):
         status_code=401, detail='Invalid token'))
 
     response = client.get('/verification', params={'token': 'invalid_token'})
+
+    assert response.status_code == 401
+    assert response.json().get('detail') == 'Invalid token'
+
+
+def test_email_verification_token_returns_none(client: TestClient, mocker):
+    mocker.patch('app.api.api_v1.endpoints.utils.very_token', return_value=None)
+
+    response = client.get('/verification', params={'token': 'some_invalid_token'})
 
     assert response.status_code == 401
     assert response.json().get('detail') == 'Invalid token'
