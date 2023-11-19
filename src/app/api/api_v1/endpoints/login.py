@@ -16,12 +16,12 @@ async def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
     user = db.query(DbUsers).filter(DbUsers.username == request.username).first()
     if not user:
         raise HTTPException(
-            status_code=404,
+            status_code=401,
             detail='Invalid username'
         )
     if not Hash.verify(user.password, request.password):
         raise HTTPException(
-            status_code=404,
+            status_code=401,
             detail='Incorrect password'
         )
     access_token = create_access_token(data={'username': user.username})

@@ -27,7 +27,7 @@ def test_create_user_admin_success(client: TestClient, mocker):
     assert data['username'] == 'TestUser'
 
 
-def test_create_user_admin_missingBody(client: TestClient, mocker):
+def test_create_user_admin_missing_body(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     response = client.post('/users')
     data = response.json()
@@ -36,7 +36,7 @@ def test_create_user_admin_missingBody(client: TestClient, mocker):
     assert data['detail'][0]['loc'] == ['body']
 
 
-def test_create_user_admin_missingEmail(client: TestClient, mocker):
+def test_create_user_admin_missing_email(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -49,7 +49,7 @@ def test_create_user_admin_missingEmail(client: TestClient, mocker):
     assert data['detail'][0]['loc'] == ['body', 'email']
 
 
-def test_create_user_admin_missingUsername(client: TestClient, mocker):
+def test_create_user_admin_missing_username(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'password': 'TestPassword',
@@ -62,7 +62,7 @@ def test_create_user_admin_missingUsername(client: TestClient, mocker):
     assert data['detail'][0]['loc'] == ['body', 'username']
 
 
-def test_create_user_admin_missingPassword(client: TestClient, mocker):
+def test_create_user_admin_missing_password(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -75,7 +75,7 @@ def test_create_user_admin_missingPassword(client: TestClient, mocker):
     assert data['detail'][0]['loc'] == ['body', 'password']
 
 
-def test_create_user_admin_invalidEmail(client: TestClient, mocker):
+def test_create_user_admin_invalid_email(client: TestClient, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
     new_user = {
         'username': 'TestUser',
@@ -90,7 +90,7 @@ def test_create_user_admin_invalidEmail(client: TestClient, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_users_notAuthenticated(client: TestClient):
+async def test_get_users_not_authenticated(client: TestClient):
     response = client.get('/users')
     data = response.json()
 

@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, Depends
+from fastapi.exceptions import HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,9 @@ async def email_verification(request: Request, token: str,
         return templates.TemplateResponse('verification.html',
                                           {'request': request,
                                            'username': user.username})
+    if user and user.is_verified:
+        return None
+
     raise HTTPException(
         status_code=401,
         detail='Invalid token',
