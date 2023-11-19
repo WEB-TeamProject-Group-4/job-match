@@ -126,6 +126,7 @@ async def test_company_factory_create_db_user_risesHTTPError(db, test_db):
     test_company = create_test_user('company')
     db.add(test_company)
     db.commit()
+
     with pytest.raises(HTTPException) as exception:
         result = await crud_user.CompanyFactory.create_db_user(db, company, 'company')
 
