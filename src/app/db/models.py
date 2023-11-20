@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, ForeignKey, Boolean, LargeBinary, INT
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, LargeBinary, INT
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -77,8 +77,8 @@ class DbAds(Base):
     description = Column(String(100), nullable=False)
     location = Column(String(45), nullable=False)
     status = Column(String(45), nullable=False)
-    salary_range_id = Column(String(50), ForeignKey('salary_ranges.id'), nullable=False)
-    salary_range = relationship('DbSalaryRanges', back_populates='ad')
+    min_salary = Column(Integer, nullable=False)
+    max_salary = Column(Integer, nullable=False)
     info = relationship('DbInfo', back_populates='ad')
     requirements = relationship("DbSkills", secondary=adds_skills, back_populates="ad")
     match = relationship('DbJobsMatches', back_populates='ad')
@@ -91,9 +91,3 @@ class DbSkills(Base):
     ad = relationship("DbAds", secondary=adds_skills, back_populates="requirements")
 
 
-class DbSalaryRanges(Base):
-    __tablename__: str = 'salary_ranges'
-    id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
-    min = Column(INT, nullable=False)
-    max = Column(INT, nullable=False)
-    ad = relationship('DbAds', back_populates='salary_range')
