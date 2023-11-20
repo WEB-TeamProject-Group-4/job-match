@@ -17,3 +17,7 @@ class CompanyCreateDisplay(UsernameDisplay):
 class CompanyDisplay(BaseModel):
     user: UsernameDisplay
     name: str
+
+
+class UpdateCompanyDisplay(CompanyDisplay):
+    contacts: str

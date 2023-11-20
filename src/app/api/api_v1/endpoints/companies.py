@@ -7,7 +7,7 @@ from app.core.auth import get_current_user
 from app.crud.crud_user import create_user
 from app.crud import crud_company
 from app.db.database import get_db
-from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay
+from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay, UpdateCompanyDisplay
 from app.schemas.user import UserDisplay
 
 router = APIRouter()
@@ -38,7 +38,7 @@ async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
     return company
 
 
-@router.patch('/companies', response_model=CompanyDisplay)
+@router.patch('/companies', response_model=UpdateCompanyDisplay)
 async def update_company(db: Annotated[Session, Depends(get_db)],
                          current_user: Annotated[UserDisplay, Depends(get_current_user)],
                          name: Annotated[str, Query(description='Optional name update parameter')] = None,
