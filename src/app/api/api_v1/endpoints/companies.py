@@ -1,13 +1,14 @@
 from typing import Annotated, List
-from fastapi import Depends, APIRouter
+
+from fastapi import Depends, APIRouter, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
+
 from app.core.auth import get_current_user
 from app.crud.crud_user import create_user
+from app.crud import crud_company
 from app.db.database import get_db
-from app.db.models import DbCompanies, DbUsers
 from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay
 from app.schemas.user import UserDisplay
-
 
 router = APIRouter()
 
@@ -18,7 +19,22 @@ async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(g
 
 
 @router.get('/companies', response_model=List[CompanyDisplay])
-def get_companies(db: Annotated[Session, Depends(get_db)],
-                  current_user: Annotated[UserDisplay, Depends(get_current_user)]):
-    companies = db.query(DbCompanies).join(DbCompanies.user).filter(DbUsers.is_verified == 1).all()
+async def get_companies(db: Annotated[Session, Depends(get_db)],
+                        current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                        name: Annotated[str, Query(description='Optional name search parameter')] = None):
+
+    companies = await crud_company.get_companies_crud(db)
+
     return companies
+
+
+@router.get('/companies/{company_id}', response_model=CompanyDisplay)
+async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
+                            company_id: Annotated[str, Path(description='Mandatory company id path parameter')]):
+    company = await crud_company.get_company_by_id_crud(db, company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Company with id {company_id} does not exist.'
+        )
+    return company
