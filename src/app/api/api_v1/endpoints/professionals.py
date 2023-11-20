@@ -13,8 +13,8 @@ router = APIRouter()
 
 
 @router.post('/professionals', response_model=ProfessionalCreateDisplay)
-async def create_professional(request: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_user(db, request)
+async def create_professional(schema: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_user(db, schema)
 
 
 @router.get('/professionals', response_model=List[ProfessionalDisplay])

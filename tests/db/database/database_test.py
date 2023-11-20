@@ -1,6 +1,7 @@
 from app.db.database import get_db
 from sqlalchemy.orm import Session
 
+
 def test_get_db():
     expected_db_type = Session
 

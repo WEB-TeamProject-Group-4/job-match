@@ -16,5 +16,3 @@ class UsernameDisplay(BaseModel):
 
 class UserDisplay(UsernameDisplay):
     type: str
-
-

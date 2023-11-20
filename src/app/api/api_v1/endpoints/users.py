@@ -12,8 +12,8 @@ router = APIRouter()
 
 
 @router.post('/users', response_model=UserDisplay)
-async def create_user_admin(request: UserCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_user(db, request)
+async def create_user_admin(schema: UserCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_user(db, schema)
 
 
 @router.get('/users', response_model=List[UserDisplay])

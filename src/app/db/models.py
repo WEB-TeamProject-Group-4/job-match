@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, LargeBinary, INT
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -59,6 +59,7 @@ class DbCompanies(Base):
     info = relationship('DbInfo', back_populates='company')
     match = relationship("DbJobsMatches", back_populates='company')
 
+
 class DbInfo(Base):
     __tablename__: str = 'info'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
@@ -89,5 +90,3 @@ class DbSkills(Base):
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     name = Column(String(45), nullable=False)
     ad = relationship("DbAds", secondary=adds_skills, back_populates="requirements")
-
-

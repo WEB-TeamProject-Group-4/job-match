@@ -1,10 +1,9 @@
 import jwt
 import pytest
-from app.db.models import DbCompanies, DbProfessionals, DbUsers
+from app.db.models import DbCompanies, DbUsers
 from fastapi.testclient import TestClient
 from app.core.security import SECRET_KEY
 from app.schemas.company import CompanyCreateDisplay
-from app.schemas.professional import ProfessionalCreateDisplay
 
 
 def create_user():
@@ -31,7 +30,6 @@ def test_create_company_success(client: TestClient, test_db, db, mocker):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_company())
     mocker.patch('app.crud.crud_user.send_email')
 
-
     new_company = {
         "username": "TestCompany",
         "password": "Test123",
@@ -48,9 +46,11 @@ def test_create_company_success(client: TestClient, test_db, db, mocker):
 
 @pytest.mark.parametrize(
     "test_input, expected_loc",
-    [   
+    [
         ({"password": "Test123", "email": "test.company@example.com", "name": "Test Company"}, ['body', 'username']),
-        ({"username": "TestCompany", "email": "test.company@example.com", "name": "Test Company"}, ['body', 'password']),
+        (
+                {"username": "TestCompany", "email": "test.company@example.com", "name": "Test Company"},
+                ['body', 'password']),
         ({"username": "TestCompany", "password": "Test123", "name": "Test Company"}, ['body', 'email']),
         ({"username": "TestCompany", "password": "Test123", "email": "test.company@example.com"}, ['body', 'name']),
         ([], ['body']),
@@ -77,9 +77,12 @@ async def test_get_companies_not_authenticated(client: TestClient):
 
 def test_get_companies_success(client: TestClient, test_db, db, mocker):
     user_data_list = [
-        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123", 'type': 'admin', 'is_verified': 0}, # this should not be counted, is_verified == 0
-        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123", 'type': 'company', 'is_verified': 1},
-        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123", 'type': 'professional', 'is_verified': 1}
+        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
+         'type': 'admin', 'is_verified': 0},  # this should not be counted, is_verified == 0
+        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123",
+         'type': 'company', 'is_verified': 1},
+        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123",
+         'type': 'professional', 'is_verified': 1}
 
     ]
 

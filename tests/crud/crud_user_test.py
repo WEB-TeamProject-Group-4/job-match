@@ -53,7 +53,7 @@ def create_test_user(user_type: str):
 
 
 @pytest.mark.asyncio
-async def test_user_factory_create_db_user_returnsAdmin(db, mocker, test_db):
+async def test_user_factory_create_db_user_returns_admin(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
 
     result = await crud_user.UserFactory.create_db_user(db, user, 'admin')
@@ -65,7 +65,7 @@ async def test_user_factory_create_db_user_returnsAdmin(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_user_factory_create_db_user_returnsProfessional(db, mocker, test_db):
+async def test_user_factory_create_db_user_returns_professional(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
 
     result = await crud_user.UserFactory.create_db_user(db, user, 'professional')
@@ -77,7 +77,7 @@ async def test_user_factory_create_db_user_returnsProfessional(db, mocker, test_
 
 
 @pytest.mark.asyncio
-async def test_user_factory_create_db_user_returnsCompany(db, mocker, test_db):
+async def test_user_factory_create_db_user_returns_company(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.Hash.bcrypt', return_value=user.password)
 
     result = await crud_user.UserFactory.create_db_user(db, user, 'company')
@@ -89,7 +89,7 @@ async def test_user_factory_create_db_user_returnsCompany(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_user_factory_create_db_user_risesHTTPException(db, test_db):
+async def test_user_factory_create_db_user_rises_HTTPException(db, test_db):
     test_user = create_test_user('admin')
     db.add(test_user)
     db.commit()
@@ -122,7 +122,7 @@ async def test_company_factory_create_db_user_success(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_company_factory_create_db_user_risesHTTPError(db, test_db):
+async def test_company_factory_create_db_user_rises_HTTPError(db, test_db):
     test_company = create_test_user('company')
     db.add(test_company)
     db.commit()
@@ -146,7 +146,7 @@ def test_create_user_factory(user_type, expected_factory):
 
 
 @pytest.mark.asyncio
-async def test_create_user_returnsAdmin(db, mocker, test_db):
+async def test_create_user_returns_admin(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
 
     result = await crud_user.create_user(db, user)
@@ -157,7 +157,7 @@ async def test_create_user_returnsAdmin(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_create_user_returnsProfessional(db, mocker, test_db):
+async def test_create_user_returns_professional(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
 
     result = await crud_user.create_user(db, professional)
@@ -167,7 +167,7 @@ async def test_create_user_returnsProfessional(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_create_user_returnsCompany(db, mocker, test_db):
+async def test_create_user_returns_company(db, mocker, test_db):
     mocker.patch('app.crud.crud_user.send_email', return_value=None)
 
     result = await crud_user.create_user(db, company)

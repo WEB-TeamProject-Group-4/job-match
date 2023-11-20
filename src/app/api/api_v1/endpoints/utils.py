@@ -16,7 +16,7 @@ templates = Jinja2Templates(directory='app/templates')
 
 
 @router.get('/verification', response_class=HTMLResponse, include_in_schema=False)
-async def email_verification(request: Request, token: str,
+async def email_verification(schema: Request, token: str,
                              db: Annotated[Session, Depends(get_db)]):
     user = await very_token(token, db)
     if user:
@@ -24,7 +24,7 @@ async def email_verification(request: Request, token: str,
             user.is_verified = True
             db.commit()
             return templates.TemplateResponse('verification.html',
-                                            {'request': request,'username': user.username})
+                                              {'request': schema, 'username': user.username})
         elif user.is_verified:
             return HTMLResponse(content="<html>User already verified</html>", status_code=200)
 

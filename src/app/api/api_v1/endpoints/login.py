@@ -11,15 +11,15 @@ router = APIRouter()
 
 
 @router.post('/login', include_in_schema=False)
-async def login(request: Annotated[OAuth2PasswordRequestForm, Depends()],
+async def login(schema: Annotated[OAuth2PasswordRequestForm, Depends()],
                 db: Annotated[Session, Depends(get_db)]):
-    user = db.query(DbUsers).filter(DbUsers.username == request.username).first()
+    user = db.query(DbUsers).filter(DbUsers.username == schema.username).first()
     if not user:
         raise HTTPException(
             status_code=401,
             detail='Invalid username'
         )
-    if not Hash.verify(user.password, request.password):
+    if not Hash.verify(user.password, schema.password):
         raise HTTPException(
             status_code=401,
             detail='Incorrect password'

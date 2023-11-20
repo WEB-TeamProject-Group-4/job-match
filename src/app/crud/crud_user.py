@@ -14,12 +14,12 @@ UserModelType = TypeVar("UserModelType", bound=DbUsers)
 
 class UserFactory(Generic[UserModelType]):
     @staticmethod
-    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
-                          user_type: str) -> UserModelType:
+    async def create_db_user(db: Session, schema: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+                             user_type: str) -> UserModelType:
         new_user = DbUsers(
-            username=request.username,
-            password=Hash.bcrypt(request.password),
-            email=request.email,
+            username=schema.username,
+            password=Hash.bcrypt(schema.password),
+            email=schema.email,
             type=user_type
         )
         try:
@@ -34,32 +34,32 @@ class UserFactory(Generic[UserModelType]):
 
 class ProfessionalFactory(UserFactory[DbProfessionals]):
     @staticmethod
-    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
-                          user_type: str) -> ProfessionalCreateDisplay:
-        new_user = await UserFactory.create_db_user(db, request, "professional")
+    async def create_db_user(db: Session, schema: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+                             user_type: str) -> ProfessionalCreateDisplay:
+        new_user = await UserFactory.create_db_user(db, schema, "professional")
 
         new_professional = DbProfessionals(
-            first_name=request.first_name,
-            last_name=request.last_name,
+            first_name=schema.first_name,
+            last_name=schema.last_name,
             user_id=new_user.id
         )
 
         db.add(new_professional)
         db.commit()
         db.refresh(new_professional)
-        await send_email([request.email], new_user)
+        await send_email([schema.email], new_user)
         return ProfessionalCreateDisplay(username=new_user.username, first_name=new_professional.first_name,
                                          last_name=new_professional.last_name)
 
 
 class CompanyFactory(UserFactory[DbCompanies]):
     @staticmethod
-    async def create_db_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate],
-                          user_type: str) -> CompanyCreateDisplay:
-        new_user = await UserFactory.create_db_user(db, request, "company")
+    async def create_db_user(db: Session, schema: Union[UserCreate, ProfessionalCreate, CompanyCreate],
+                             user_type: str) -> CompanyCreateDisplay:
+        new_user = await UserFactory.create_db_user(db, schema, "company")
 
         new_company = DbCompanies(
-            name=request.name,
+            name=schema.name,
             user_id=new_user.id
         )
 
@@ -73,7 +73,7 @@ class CompanyFactory(UserFactory[DbCompanies]):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=err.args)
         else:
             db.refresh(new_company)
-            await send_email([request.email], new_user)
+            await send_email([schema.email], new_user)
             return CompanyCreateDisplay(username=new_user.username, name=new_company.name)
 
 
@@ -86,8 +86,8 @@ def create_user_factory(user_type: str) -> Type[UserFactory]:
     return factories.get(user_type, UserFactory)
 
 
-async def create_user(db: Session, request: Union[UserCreate, ProfessionalCreate, CompanyCreate]) -> UserModelType:
-    user_type = request.get_type()
+async def create_user(db: Session, schema: Union[UserCreate, ProfessionalCreate, CompanyCreate]) -> UserModelType:
+    user_type = schema.get_type()
     factory = create_user_factory(user_type)
-    new_user = await factory.create_db_user(db, request, user_type)
+    new_user = await factory.create_db_user(db, schema, user_type)
     return new_user

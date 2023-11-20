@@ -2,7 +2,6 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
 from typing import List
 from app.db.models import DbUsers
-import jwt
 from app.core.config import settings
 from app.core.security import EMAIL_KEY, create_access_token
 

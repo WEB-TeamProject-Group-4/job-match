@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.core.security import SECRET_KEY
 from app.schemas.professional import ProfessionalCreateDisplay
 
+
 def create_user():
     return DbUsers(
         username='TestUser',
@@ -44,12 +45,19 @@ def test_create_professional_success(client: TestClient, test_db, mocker):
 
 @pytest.mark.parametrize(
     "test_input, expected_loc",
-    [   
-        ({"password": "Test123", "email": "test/prof@example.com", "first_name": "Professional", "last_name": "Lastname"}, ['body', 'username']),
-        ({"username": "TestUser", "email": "test/prof@example.com", "first_name": "Professional", "last_name": "Lastname"}, ['body', 'password']),
-        ({"username": "TestUser", "password": "Test123", "first_name": "Professional", "last_name": "Lastname"}, ['body', 'email']),
-        ({"username": "TestUser", "password": "Test123", "email": "test/prof@example.com", "last_name": "Lastname"}, ['body', 'first_name']),
-        ({"username": "TestUser", "password": "Test123", "email": "test/prof@example.com", "first_name": "Professional"}, ['body', 'last_name']),
+    [
+        ({"password": "Test123", "email": "test/prof@example.com", "first_name": "Professional",
+          "last_name": "Lastname"}, ['body', 'username']),
+        ({"username": "TestUser", "email": "test/prof@example.com", "first_name": "Professional",
+          "last_name": "Lastname"}, ['body', 'password']),
+        ({"username": "TestUser", "password": "Test123", "first_name": "Professional", "last_name": "Lastname"},
+         ['body', 'email']),
+        ({"username": "TestUser", "password": "Test123", "email": "test/prof@example.com", "last_name": "Lastname"},
+         ['body', 'first_name']),
+        (
+                {"username": "TestUser", "password": "Test123", "email": "test/prof@example.com",
+                 "first_name": "Professional"},
+                ['body', 'last_name']),
         ([], ['body']),
     ]
 )
@@ -74,9 +82,12 @@ async def test_get_professional_not_authenticated(client: TestClient):
 
 def test_get_professionals_success(client: TestClient, test_db, db, mocker):
     user_data_list = [
-        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123", 'type': 'admin', 'is_verified': 0}, # this should not be counted, is_verified == 0
-        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123", 'type': 'company', 'is_verified': 1},
-        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123", 'type': 'professional', 'is_verified': 1}
+        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
+         'type': 'admin', 'is_verified': 0},  # this should not be counted, is_verified == 0
+        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123",
+         'type': 'company', 'is_verified': 1},
+        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123",
+         'type': 'professional', 'is_verified': 1}
 
     ]
 

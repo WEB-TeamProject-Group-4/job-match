@@ -34,13 +34,13 @@ def test_create_user_admin_success(client: TestClient, mocker):
 
 
 @pytest.mark.parametrize(
-        'test_input, expected_loc',
-        [
+    'test_input, expected_loc',
+    [
         ({"password": "TestPassword", "email": "test.email@email.com"}, ['body', 'username']),
         ({"username": "TestUser", "email": "test.email@email.com"}, ['body', 'password']),
         ({"username": "TestUser", "password": "TestPassword"}, ['body', 'email']),
         ([], ['body'])
-        ]
+    ]
 )
 def test_create_user_admin_missing_fields(client: TestClient, test_db, mocker, test_input, expected_loc):
     mocker.patch('app.api.api_v1.endpoints.users.create_user', return_value=create_user())
@@ -63,9 +63,12 @@ async def test_get_users_not_authenticated(client: TestClient):
 
 def test_get_users_success(client: TestClient, test_db, db, mocker):
     user_data_list = [
-        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123", 'type': 'admin', 'is_verified': 0}, # this should not be counted, is_verified == 0
-        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123", 'type': 'company', 'is_verified': 1},
-        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123", 'type': 'professional', 'is_verified': 1}
+        {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
+         'type': 'admin', 'is_verified': 0},  # this should not be counted, is_verified == 0
+        {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123",
+         'type': 'company', 'is_verified': 1},
+        {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123",
+         'type': 'professional', 'is_verified': 1}
 
     ]
 

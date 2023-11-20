@@ -13,8 +13,8 @@ router = APIRouter()
 
 
 @router.post('/companies', response_model=CompanyCreateDisplay)
-async def create_company(request: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
-    return await create_user(db, request)
+async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
+    return await create_user(db, schema)
 
 
 @router.get('/companies', response_model=List[CompanyDisplay])
