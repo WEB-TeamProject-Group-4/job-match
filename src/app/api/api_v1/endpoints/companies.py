@@ -22,9 +22,7 @@ async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(g
 async def get_companies(db: Annotated[Session, Depends(get_db)],
                         current_user: Annotated[UserDisplay, Depends(get_current_user)],
                         name: Annotated[str, Query(description='Optional name search parameter')] = None):
-
-    companies = await crud_company.get_companies_crud(db)
-
+    companies = await crud_company.get_companies_crud(db, name)
     return companies
 
 
@@ -38,3 +36,19 @@ async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
             detail=f'Company with id {company_id} does not exist.'
         )
     return company
+
+
+@router.patch('/companies', response_model=CompanyDisplay)
+async def update_company(db: Annotated[Session, Depends(get_db)],
+                         current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                         name: Annotated[str, Query(description='Optional name update parameter')] = None,
+                         contact: Annotated[str, Query(description='Optional contact update parameter')] = None):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    else:
+        updated_company = await crud_company.update_company(db, name, contact, current_user.id)
+        return updated_company
+
