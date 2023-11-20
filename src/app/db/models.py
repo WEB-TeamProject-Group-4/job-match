@@ -68,7 +68,6 @@ class DbInfo(Base):
     picture = Column(LargeBinary, nullable=True, default=None)
     company = relationship('DbCompanies', back_populates='info')
     professional = relationship('DbProfessionals', back_populates='info')
-    ad_id = Column(String(50), ForeignKey('ads.id'), nullable=False)
     ad = relationship('DbAds', back_populates='info')
 
 
@@ -80,6 +79,7 @@ class DbAds(Base):
     status = Column(String(45), nullable=False)
     min_salary = Column(Integer, nullable=False)
     max_salary = Column(Integer, nullable=False)
+    info_id = Column(String(50), ForeignKey('info.id'), nullable=False)
     info = relationship('DbInfo', back_populates='ad')
     requirements = relationship("DbSkills", secondary=adds_skills, back_populates="ad")
     match = relationship('DbJobsMatches', back_populates='ad')
