@@ -20,7 +20,7 @@ async def get_company_by_id_crud(db: Session, company_id: str) -> Type[DbCompani
     return company
 
 
-async def update_company(db: Session, name: str | None, contact: str | None, user_id: str) -> Type[DbCompanies]:
+async def update_company_crud(db: Session, name: str | None, contact: str | None, user_id: str) -> Type[DbCompanies]:
     company = db.query(DbCompanies).filter(DbCompanies.user_id == user_id).first()
     if name:
         company.name = name

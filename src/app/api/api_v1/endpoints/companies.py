@@ -49,6 +49,6 @@ async def update_company(db: Annotated[Session, Depends(get_db)],
             detail='Please verify your account.'
         )
     else:
-        updated_company = await crud_company.update_company(db, name, contact, current_user.id)
+        updated_company = await crud_company.update_company_crud(db, name, contact, current_user.id)
         return updated_company
 
