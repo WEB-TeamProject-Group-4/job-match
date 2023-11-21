@@ -21,6 +21,3 @@ def get_users(db: Annotated[Session, Depends(get_db)],
               current_user: Annotated[UserDisplay, Depends(get_current_user)]):
     users = db.query(DbUsers).filter(DbUsers.is_verified == 1).all()
     return users
-
-
-
