@@ -41,7 +41,7 @@ async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
 
 @router.patch('/companies', response_model=UpdateCompanyDisplay)
 async def update_company(db: Annotated[Session, Depends(get_db)],
-                         current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                         current_user: Annotated[DbUsers, Depends(get_current_user)],
                          name: Annotated[str, Query(description='Optional name update parameter')] = None,
                          contact: Annotated[str, Query(description='Optional contact update parameter')] = None):
     if not current_user.is_verified:
