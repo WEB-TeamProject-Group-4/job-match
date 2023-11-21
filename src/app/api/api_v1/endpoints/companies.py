@@ -11,7 +11,7 @@ from app.db.models import DbUsers
 from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay, UpdateCompanyDisplay
 from app.schemas.user import UserDisplay
 
-router = APIRouter()
+router = APIRouter(tags=['company'])
 
 
 @router.post('/companies', response_model=CompanyCreateDisplay)
@@ -53,3 +53,10 @@ async def update_company(db: Annotated[Session, Depends(get_db)],
         updated_company = await crud_company.update_company_crud(db, name, contact, current_user.id)
         return updated_company
 
+
+@router.delete('/companies/{company_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_company(db: Annotated[Session, Depends(get_db)],
+                         company_id: Annotated[str, Path(description='Mandatory company id path parameter')],
+                         current_user: Annotated[DbUsers, Depends(get_current_user)]
+                         ):
+    return await crud_company.delete_company_by_id_crud(db, company_id, current_user.id)

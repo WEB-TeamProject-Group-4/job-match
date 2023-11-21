@@ -31,7 +31,7 @@ class DbUsers(Base):
     type = Column(String(45), nullable=False)
     is_verified = Column(Boolean, default=False)
     professional = relationship('DbProfessionals', back_populates='user')
-    company = relationship('DbCompanies', back_populates='user')
+    company = relationship('DbCompanies', back_populates='user', cascade='all, delete-orphan')
 
 
 class DbProfessionals(Base):
@@ -53,9 +53,9 @@ class DbCompanies(Base):
     name = Column(String(45), nullable=False, unique=True)
     contacts = Column(String(45), nullable=True, default=None)
     user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
-    user = relationship('DbUsers', back_populates='company')
+    user = relationship('DbUsers', back_populates='company', cascade='all, delete-orphan', single_parent=True)
     info_id = Column(String(50), ForeignKey('info.id'), nullable=True, default=None)
-    info = relationship('DbInfo', back_populates='company')
+    info = relationship('DbInfo', back_populates='company', cascade='all, delete-orphan', single_parent=True)
     match = relationship("DbJobsMatches", back_populates='company')
 
 
@@ -66,9 +66,9 @@ class DbInfo(Base):
     location = Column(String(45), nullable=True)
     picture = Column(String(100), nullable=True, default=None)
     main_ad = Column(String(50), nullable=True, default=None)
-    company = relationship('DbCompanies', back_populates='info')
+    company = relationship('DbCompanies', back_populates='info', cascade='all, delete-orphan')
     professional = relationship('DbProfessionals', back_populates='info')
-    ad = relationship('DbAds', back_populates='info')
+    ad = relationship('DbAds', back_populates='info', cascade='all, delete-orphan')
 
 
 class DbAds(Base):
@@ -82,7 +82,7 @@ class DbAds(Base):
     info_id = Column(String(50), ForeignKey('info.id'), nullable=False)
     info = relationship('DbInfo', back_populates='ad')
     skills = relationship("DbSkills", secondary=adds_skills, back_populates="ads")
-    match = relationship('DbJobsMatches', back_populates='ad')
+    match = relationship('DbJobsMatches', back_populates='ad', cascade='all, delete-orphan')
 
 
 class DbSkills(Base):
