@@ -20,7 +20,7 @@ async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
     crud_professional.is_user_verified(current_user)
     professional: DbProfessionals = await crud_professional.get_professional(db, current_user)
 
-    return crud_professional.get_resumes(db, professional.info)
+    return crud_professional.get_resumes(db, professional)
 
 
 @router.get('/professionals', response_model=List[ProfessionalDisplay])
@@ -64,7 +64,7 @@ async def edit_professional_info(db: Annotated[Session, Depends(get_db)],
 @router.patch('/professionals/summary')
 async def edit_summary(db: Annotated[Session, Depends(get_db)],
                         current_user: Annotated[DbUsers, Depends(get_current_user)],
-                        summary: Annotated[str, Query(description='Optional summary update parameter')] = None):
+                        summary: str):
     
     crud_professional.is_user_verified(current_user)
     return await crud_professional.edit_professional_summary(db, current_user, summary)

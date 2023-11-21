@@ -23,7 +23,7 @@ async def edit_info(db: Session, user: DbUsers, first_name: Optional[str],
     if last_name:
         professional.last_name = last_name.capitalize()
     if location:
-        if professional.info_id == None:
+        if professional.info is None:
             await create_professional_info(db, professional, summary="Your default summary", location=location)
         else:
             professional.info.location = location.capitalize()
@@ -50,7 +50,7 @@ async def create_professional_info(db: Session, professional: DbProfessionals, s
 async def get_info(db: Session, user: DbUsers):
     professional: DbProfessionals = await get_professional(db, user)
     if professional.info is None:
-        return {"message": "Professional Info not available"}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Please edit your personal information.')
     
     resumes = get_resumes(db, professional.info)
 
@@ -65,8 +65,11 @@ async def get_info(db: Session, user: DbUsers):
     )
     
 
-def get_resumes(db: Session, professional_info: DbInfo):
-    resumes_db = db.query(DbAds).filter(DbAds.info_id == professional_info.id).all()
+def get_resumes(db: Session, professional: DbProfessionals):
+    if professional.info is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='You have no resumes')
+    
+    resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id).all()
     resumes = [
             {
                 "id": resume.id,
@@ -150,6 +153,19 @@ async def get_all_approved_professionals(db: Session, first_name: Optional[str],
 
     return professionals.offset((page - 1) * page_items).limit(page_items).all()
     
+    
+async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
+    professional: DbProfessionals = await get_professional(db, user)
+    if professional.info is None:
+        new_info = DbInfo(description=summary,location='')
+        db.add(new_info)
+        db.commit()
+        db.refresh(new_info)
+
+        professional.info = new_info
+        db.commit()
+
+        return {'message': 'Your summary has been updated successfully'}
     
 
 
