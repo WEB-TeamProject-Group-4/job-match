@@ -65,6 +65,7 @@ class DbInfo(Base):
     description = Column(String(45), nullable=True)
     location = Column(String(45), nullable=True)
     picture = Column(String(100), nullable=True, default=None)
+    main_ad = Column(String(50), nullable=True, default=None)
     company = relationship('DbCompanies', back_populates='info')
     professional = relationship('DbProfessionals', back_populates='info')
     ad = relationship('DbAds', back_populates='info')
