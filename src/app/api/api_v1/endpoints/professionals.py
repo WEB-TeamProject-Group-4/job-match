@@ -1,19 +1,45 @@
 from typing import Annotated, List
 
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, Path, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.crud.crud_professional import change_status, delete_resume_by_id, edit_info, get_info, get_professional, \
-    get_resumes
+import app.crud.crud_professional as crud_professional
 from app.crud.crud_user import create_user
 from app.db.database import get_db
 from app.db.models import DbProfessionals, DbUsers
-from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay, \
-    ProfessionalInfoCreate, ProfessionalInfoDisplay, ProfessionalStatus
+from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay, ProfessionalInfoDisplay, ProfessionalStatus
 from app.schemas.user import UserDisplay
 
 router = APIRouter()
+
+
+@router.get('/professionals/resumes')
+async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
+                          current_user: Annotated[DbUsers, Depends(get_current_user)]):
+    crud_professional.is_user_verified(current_user)
+    professional: DbProfessionals = await crud_professional.get_professional(db, current_user)
+
+    return crud_professional.get_resumes(db, professional.info)
+
+
+@router.get('/professionals', response_model=List[ProfessionalDisplay])
+async def get_professionals(db: Annotated[Session, Depends(get_db)],
+                      current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                      search_by_first_name: Annotated[str, Query(description='Optional first name search parameter')] = None,
+                      search_by_last_name: Annotated[str, Query(description='Optional last name search parameter')] = None,
+                      search_by_status: Annotated[ProfessionalStatus, Query(description='Optional status search parameter')] = None,
+                      search_by_location: Annotated[str, Query(description='Optional location search parameter')] = None):
+    crud_professional.is_user_verified(current_user)
+    professionals = await crud_professional.get_all_approved_professionals(db, search_by_first_name, search_by_last_name, search_by_status, search_by_location)
+    return professionals
+
+
+@router.get('/professionals/info', response_model=ProfessionalInfoDisplay)
+async def get_professional_info(db: Annotated[Session, Depends(get_db)],
+                                current_user: Annotated[DbUsers, Depends(get_current_user)]):
+    crud_professional.is_user_verified(current_user)
+    return await crud_professional.get_info(db, current_user)
 
 
 @router.post('/professionals', response_model=ProfessionalCreateDisplay)
@@ -21,43 +47,46 @@ async def create_professional(schema: ProfessionalCreate, db: Annotated[Session,
     return await create_user(db, schema)
 
 
-@router.get('/professionals', response_model=List[ProfessionalDisplay])
-def get_professionals(db: Annotated[Session, Depends(get_db)],
-                      current_user: Annotated[UserDisplay, Depends(get_current_user)]):
-    professionals = db.query(DbProfessionals).join(DbProfessionals.user).filter(DbUsers.is_verified == 1).all()
-    return professionals
-
-
 @router.post('/professionals/info', status_code=201)
-async def edit_professional_info(schema: ProfessionalInfoCreate, db: Annotated[Session, Depends(get_db)],
-                                 current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    return await edit_info(db, schema, current_user)
+async def edit_professional_info(db: Annotated[Session, Depends(get_db)],
+                        current_user: Annotated[DbUsers, Depends(get_current_user)],
+                        location: str,
+                        first_name: Annotated[str, Query(description='Optional first name update parameter')] = None,
+                        last_name: Annotated[str, Query(description='Optional last name update parameter')] = None):
+
+    crud_professional.is_user_verified(current_user)
+    return await crud_professional.edit_info(db, current_user, first_name, last_name, location)
 
 
-@router.get('/professionals/info', response_model=ProfessionalInfoDisplay)
-async def get_professional_info(db: Annotated[Session, Depends(get_db)],
-                                current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    return await get_info(db, current_user)
+@router.patch('/professionals/summary')
+async def edit_summary(db: Annotated[Session, Depends(get_db)],
+                        current_user: Annotated[DbUsers, Depends(get_current_user)],
+                        summary: Annotated[str, Query(description='Optional summary update parameter')] = None):
+    
+    crud_professional.is_user_verified(current_user)
+    return await crud_professional.edit_professional_summary(db, current_user, summary)
 
 
 @router.patch('/professionals/status')
 async def change_professional_status(status: ProfessionalStatus, db: Annotated[Session, Depends(get_db)],
                                      current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    return await change_status(status, db, current_user)
+    crud_professional.is_user_verified(current_user)
+    return await crud_professional.change_status(status, db, current_user)
 
 
-@router.get('/professionals/resumes')
-async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
-                          current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    professional: DbProfessionals = await get_professional(db, current_user)
-
-    return get_resumes(db, professional.info)
-
-
-@router.delete('/professionals/resume/{resume_id}', status_code=204)
-def delete_professional_resume(resume_id: str, db: Annotated[Session, Depends(get_db)],
+@router.patch('/professionals/resume/{resume_id}')
+async def set_main_resume(resume_id: str, db: Annotated[Session, Depends(get_db)],
                                current_user: Annotated[UserDisplay, Depends(get_current_user)]):
-    return delete_resume_by_id(db, resume_id)
+    crud_professional.is_user_verified(current_user)
+    return await crud_professional.setup_main_resume(resume_id, db, current_user)
+
+
+@router.delete('/professionals/resume/{resume_id}')
+def delete_professional_resume(db: Annotated[Session, Depends(get_db)],
+                               current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                               resume_id: Annotated[str, Path(description='Optional resume id update parameter')]):
+    crud_professional.is_user_verified(current_user)
+    return crud_professional.delete_resume_by_id(db, resume_id)
 
 
 def search_for_job_ads():

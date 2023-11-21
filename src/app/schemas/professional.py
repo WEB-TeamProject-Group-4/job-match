@@ -24,14 +24,11 @@ class ProfessionalDisplay(BaseModel):
     last_name: str
 
 
-class ProfessionalInfoCreate(BaseModel):
+class ProfessionalInfoDisplay(BaseModel):
     first_name: str
     last_name: str
     summary: str
     location: str
-
-
-class ProfessionalInfoDisplay(ProfessionalInfoCreate):
     status: Optional[str]
     picture: Optional[str]
     active_resumes: int
