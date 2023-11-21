@@ -94,17 +94,13 @@ async def get_professional(db: Session, user: DbUsers):
     
     return professional
 
-
-# def delete_resume_by_id(db: Session, resume_id: str):
-#     db.query(DbAds).filter(DbAds.id == resume_id).delete()
-#     db.commit()
-
-
 def delete_resume_by_id(db: Session, resume_id: str):
     ad = db.query(DbAds).filter(DbAds.id == resume_id).first()
     if ad:
         db.delete(ad)
         db.commit()
-        return {"message": "Ad deleted successfully"}
-    return {"message": "Ad not found"}
+
+        return {"message": "Deleted successfully"}
+    
+    return {"message": "Resume not found"}
 
