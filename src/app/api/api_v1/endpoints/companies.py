@@ -22,8 +22,9 @@ async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(g
 @router.get('/companies', response_model=List[CompanyDisplay])
 async def get_companies(db: Annotated[Session, Depends(get_db)],
                         current_user: Annotated[DbUsers, Depends(get_current_user)],
-                        name: Annotated[str, Query(description='Optional name search parameter')] = None):
-    companies = await crud_company.get_companies_crud(db, name)
+                        name: Annotated[str, Query(description='Optional name search parameter')] = None,
+                        page: Annotated[int, Query(description='Optional page number query parameter', ge=1)] = 1):
+    companies = await crud_company.get_companies_crud(db, name, page)
     return companies
 
 

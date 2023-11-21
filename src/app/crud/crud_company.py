@@ -6,13 +6,13 @@ from fastapi import HTTPException, status
 from app.db.models import DbCompanies, DbUsers
 
 
-async def get_companies_crud(db: Session, name: str | None) -> List[Type[DbCompanies]]:
+async def get_companies_crud(db: Session, name: str | None, page: int) -> List[Type[DbCompanies]]:
     queries = [DbUsers.is_verified == 1]
     if name:
         search = "%{}%".format(name)
         queries.append(DbCompanies.name.like(search))
 
-    companies = db.query(DbCompanies).join(DbCompanies.user).filter(*queries).all()
+    companies = db.query(DbCompanies).join(DbCompanies.user).filter(*queries).limit(10).offset((page - 1) * 10).all()
     return companies
 
 

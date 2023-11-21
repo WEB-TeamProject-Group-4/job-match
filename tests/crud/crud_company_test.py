@@ -30,13 +30,13 @@ async def test_companies_crud(db, test_db):
     db.add(company)
     db.commit()
 
-    result = await crud_company.get_companies_crud(db, None)
+    result = await crud_company.get_companies_crud(db, None, 1)
 
     assert len(result) == 1
     assert result[0].id == 'dummyCompanyId'
 
     # Testing with nonexistent company name filter
-    result = await crud_company.get_companies_crud(db, 'dummyName')
+    result = await crud_company.get_companies_crud(db, 'dummyName', 1)
 
     assert len(result) == 0
 
