@@ -1,13 +1,15 @@
+from typing import Union, Generic, TypeVar, Type
+
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
 from app.schemas.company import CompanyCreate, CompanyCreateDisplay
 from app.db.models import DbUsers, DbProfessionals, DbCompanies
 from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay
 from app.schemas.user import UserCreate
 from app.email import *
-from fastapi import HTTPException, status
 from app.core.hashing import Hash
-from sqlalchemy.exc import IntegrityError
-from typing import Union, Generic, TypeVar, Type
 
 UserModelType = TypeVar("UserModelType", bound=DbUsers)
 
