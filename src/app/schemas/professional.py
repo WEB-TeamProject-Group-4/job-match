@@ -33,7 +33,7 @@ class ProfessionalInfoCreate(BaseModel):
 
 class ProfessionalInfoDisplay(ProfessionalInfoCreate):
     status: Optional[str]
-    picture: Optional[bytes]
+    picture: Optional[str]
     active_resumes: int
     # matches: list
 
