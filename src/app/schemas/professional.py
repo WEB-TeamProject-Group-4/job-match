@@ -40,7 +40,7 @@ class ProfessionalInfoDisplay(ProfessionalInfoCreate):
 
 class ProfessionalStatus(str, Enum):
     active = 'active'
-    budy = 'busy'
+    busy = 'busy'
 
 
 

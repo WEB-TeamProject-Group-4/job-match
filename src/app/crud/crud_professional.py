@@ -11,7 +11,7 @@ async def edit_info(db: Session, schema: ProfessionalInfoCreate, user: DbUsers):
     professional = await get_professional(db, user)
 
     if schema.first_name != '' or schema.last_name != '':
-        update_name(db, professional, schema.first_name, schema.last_name)
+        await update_name(db, professional, schema.first_name, schema.last_name)
 
     if professional.info is None:
         new_info = DbInfo(
@@ -46,7 +46,7 @@ async def update_name(db: Session, professional: DbProfessionals, first_name: Op
 
 async def get_info(db: Session, user: DbUsers):
     professional: DbProfessionals = await get_professional(db, user)
-    if professional.info == None:
+    if professional.info is None:
         return {"message": "Professional Info not available"}
     
     resumes = get_resumes(db, professional.info)
