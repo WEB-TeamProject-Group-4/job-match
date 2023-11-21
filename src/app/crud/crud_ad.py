@@ -6,7 +6,7 @@ from app.db.models import DbAds, DbSkills
 from app.schemas.ad import AdCreate, SkillCreate
 
 
-def create_new_ad(db: Session, schema: AdCreate):
+async def create_new_ad(db: Session, schema: AdCreate):
     new_ad = DbAds(
         description=schema.description,
         location=schema.location,
@@ -24,7 +24,7 @@ def create_new_ad(db: Session, schema: AdCreate):
         return new_ad
 
 
-def create_new_skill(db: Session, schema: SkillCreate):
+async def create_new_skill(db: Session, schema: SkillCreate):
     new_skill = DbSkills(
         name=schema.name
     )
@@ -32,7 +32,6 @@ def create_new_skill(db: Session, schema: SkillCreate):
         db.add(new_skill)
         db.commit()
     except IntegrityError as err:
-        # rollback?
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=err.args)
     else:
         db.refresh(new_skill)

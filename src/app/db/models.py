@@ -12,7 +12,7 @@ adds_skills = Table(
 
 
 class DbJobsMatches(Base):
-    __tablename__ = 'jobs_matches'
+    __tablename__: str = 'jobs_matches'
     ad_id = Column(String(50), ForeignKey('ads.id'), primary_key=True, nullable=False)
     professional_id = Column(String(50), ForeignKey('professionals.id'), primary_key=True, nullable=False)
     company_id = Column(String(50), ForeignKey('companies.id'), primary_key=True, nullable=False)
@@ -23,7 +23,7 @@ class DbJobsMatches(Base):
 
 
 class DbUsers(Base):
-    __tablename__ = 'users'
+    __tablename__: str = 'users'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     username = Column(String(45), nullable=False, unique=True)
     password = Column(String(150), nullable=False)
@@ -64,7 +64,7 @@ class DbInfo(Base):
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     description = Column(String(45), nullable=True)
     location = Column(String(45), nullable=True)
-    picture = Column(LargeBinary, nullable=True, default=None)
+    picture = Column(String(100), nullable=True, default=None)
     company = relationship('DbCompanies', back_populates='info')
     professional = relationship('DbProfessionals', back_populates='info')
     ad = relationship('DbAds', back_populates='info')

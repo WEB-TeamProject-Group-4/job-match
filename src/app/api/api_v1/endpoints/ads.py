@@ -15,10 +15,10 @@ router = APIRouter()
 @router.post('/ads', response_model=AdCreateDisplay)
 async def create_add(schema: AdCreate, db: Annotated[Session, Depends(get_db)],
                      current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    return create_new_ad(db, schema)
+    return await create_new_ad(db, schema)
 
 
 @router.post('/skills', response_model=SkillCreateDisplay)
 async def create_skill(schema: SkillCreate, db: Annotated[Session, Depends(get_db)],
                        current_user: Annotated[DbUsers, Depends(get_current_user)]):
-    return create_new_skill(db, schema)
+    return await create_new_skill(db, schema)
