@@ -10,6 +10,9 @@ from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
 
+DEFAULT_VALUE_ITEMS_PER_PAGE = 10
+
+
 async def edit_info(db: Session, user: DbUsers, first_name: Optional[str], 
                     last_name: Optional[str], location: str):
     
@@ -126,7 +129,7 @@ def is_user_verified(user: DbUsers) -> Optional[None]:
         )
 
 async def get_all_approved_professionals(db: Session, first_name: Optional[str],last_name: Optional[str],
-                                         status: Optional[str], location: Optional[str]) -> List[Type[DbProfessionals]]:
+                                         status: Optional[str], location: Optional[str], page: Optional[int], page_items: Optional[int]) -> List[Type[DbProfessionals]]:
     queries = [DbUsers.is_verified == True]
     if first_name:
         queries.append(DbProfessionals.first_name.like(f"%{first_name}%"))
@@ -139,8 +142,13 @@ async def get_all_approved_professionals(db: Session, first_name: Optional[str],
 
     # professionals = db.query(DbProfessionals).join(DbProfessionals.user).filter(*queries).all()
 
+    page = page if page is not None else 1
+    page_items = page_items if page_items is not None else DEFAULT_VALUE_ITEMS_PER_PAGE
+
     professionals = (db.query(DbProfessionals).join(DbProfessionals.user).outerjoin(DbProfessionals.info).filter(*queries))
-    return professionals
+    total_elements = professionals.count()
+
+    return professionals.offset((page - 1) * page_items).limit(page_items).all()
     
     
 

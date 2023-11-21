@@ -29,9 +29,12 @@ async def get_professionals(db: Annotated[Session, Depends(get_db)],
                       search_by_first_name: Annotated[str, Query(description='Optional first name search parameter')] = None,
                       search_by_last_name: Annotated[str, Query(description='Optional last name search parameter')] = None,
                       search_by_status: Annotated[ProfessionalStatus, Query(description='Optional status search parameter')] = None,
-                      search_by_location: Annotated[str, Query(description='Optional location search parameter')] = None):
+                      search_by_location: Annotated[str, Query(description='Optional location search parameter')] = None,
+                      page: Annotated[int, Query(description='Optional page for pagination')] = None,
+                      page_items: Annotated[int, Query(description='Optional total elements per page')] = None):
+    
     crud_professional.is_user_verified(current_user)
-    professionals = await crud_professional.get_all_approved_professionals(db, search_by_first_name, search_by_last_name, search_by_status, search_by_location)
+    professionals = await crud_professional.get_all_approved_professionals(db, search_by_first_name, search_by_last_name, search_by_status, search_by_location, page, page_items)
     return professionals
 
 
