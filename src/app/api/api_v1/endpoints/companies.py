@@ -7,6 +7,7 @@ from app.core.auth import get_current_user
 from app.crud.crud_user import create_user
 from app.crud import crud_company
 from app.db.database import get_db
+from app.db.models import DbUsers
 from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay, UpdateCompanyDisplay
 from app.schemas.user import UserDisplay
 
@@ -20,7 +21,7 @@ async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(g
 
 @router.get('/companies', response_model=List[CompanyDisplay])
 async def get_companies(db: Annotated[Session, Depends(get_db)],
-                        current_user: Annotated[UserDisplay, Depends(get_current_user)],
+                        current_user: Annotated[DbUsers, Depends(get_current_user)],
                         name: Annotated[str, Query(description='Optional name search parameter')] = None):
     companies = await crud_company.get_companies_crud(db, name)
     return companies
