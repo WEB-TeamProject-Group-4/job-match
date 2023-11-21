@@ -21,3 +21,12 @@ class CompanyDisplay(BaseModel):
 
 class UpdateCompanyDisplay(CompanyDisplay):
     contacts: str
+
+
+class CompanyInfoCreate(BaseModel):
+    description: str
+    location: str
+
+
+class CompanyInfoCreateDisplay(CompanyInfoCreate):
+    picture: str | None

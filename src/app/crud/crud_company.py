@@ -3,7 +3,7 @@ from typing import List, Type
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.db.models import DbCompanies, DbUsers
+from app.db.models import DbCompanies, DbUsers, DbInfo
 
 
 async def get_companies_crud(db: Session, name: str | None, page: int) -> List[Type[DbCompanies]]:
@@ -48,3 +48,14 @@ async def delete_company_by_id_crud(db: Session, company_id: str, user_id: str) 
     db.delete(company)
     db.commit()
     return
+
+
+async def create_company_info_crud(db: Session, company_id: str, schema) -> DbInfo:
+    company = await get_company_by_id_crud(db, company_id)
+    new_info = DbInfo(**dict(schema))
+    db.add(new_info)
+    db.commit()
+    db.refresh(new_info)
+    company.info_id = new_info.id
+    db.commit()
+    return new_info

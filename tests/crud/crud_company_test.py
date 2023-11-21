@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from app.crud import crud_company
 from app.db.models import DbCompanies, DbUsers
+from app.schemas.company import CompanyInfoCreate
 
 
 async def create_dummy_company():
@@ -21,6 +22,12 @@ async def create_dummy_company():
         user_id=user.id
     )
     return user, company
+
+
+info_schema = CompanyInfoCreate(
+    description='dummyDescription',
+    location='dummyLocation'
+)
 
 
 @pytest.mark.asyncio
@@ -105,3 +112,17 @@ async def test_delete_company_by_id_crud(db, test_db, mocker):
     await crud_company.delete_company_by_id_crud(db, 'dummyId', 'dummyId')
 
     assert db.query(DbCompanies).all() == []
+
+
+@pytest.mark.asyncio
+async def test_create_company_info_crud(db, test_db, mocker):
+    user, company = await create_dummy_company()
+    db.add(user)
+    db.add(company)
+    db.commit()
+    mocker.patch('app.crud.crud_company.get_company_by_id_crud', return_value=company)
+
+    result = await crud_company.create_company_info_crud(db, company.id, info_schema)
+
+    assert company.info_id == result.id
+    assert result.description == info_schema.description

@@ -8,8 +8,8 @@ from app.crud.crud_user import create_user
 from app.crud import crud_company
 from app.db.database import get_db
 from app.db.models import DbUsers
-from app.schemas.company import CompanyCreate, CompanyCreateDisplay, CompanyDisplay, UpdateCompanyDisplay
-from app.schemas.user import UserDisplay
+from app.schemas.company import (CompanyCreate, CompanyCreateDisplay, CompanyDisplay,
+                                 UpdateCompanyDisplay, CompanyInfoCreate, CompanyInfoCreateDisplay)
 
 router = APIRouter(tags=['company'])
 
@@ -61,3 +61,18 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
                          current_user: Annotated[DbUsers, Depends(get_current_user)]
                          ):
     return await crud_company.delete_company_by_id_crud(db, company_id, current_user.id)
+
+
+@router.post('/companies/info', response_model=CompanyInfoCreateDisplay)
+async def create_company_info(db: Annotated[Session, Depends(get_db)],
+                              current_user: Annotated[DbUsers, Depends(get_current_user)],
+                              schema: CompanyInfoCreate
+                              ):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    else:
+        info = await crud_company.create_company_info_crud(db, current_user.company[0].id, schema)
+        return info
