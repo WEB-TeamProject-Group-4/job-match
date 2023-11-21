@@ -4,11 +4,10 @@ from sqlalchemy.orm import relationship
 import uuid
 
 adds_skills = Table(
-    'adds_skills',
-    Base.metadata,
-    Column('skill_id', String, ForeignKey('skills.id')),
-    Column('ad_id', String, ForeignKey('ads.id')),
-    Column('level', String),
+    'adds_skills', Base.metadata,
+    Column('ad_id', String(50), ForeignKey('ads.id'), primary_key=True),
+    Column('skill_id', String(50), ForeignKey('skills.id'), primary_key=True),
+    Column('level', String(45)),
 )
 
 
@@ -81,12 +80,12 @@ class DbAds(Base):
     min_salary = Column(Integer, nullable=False)
     max_salary = Column(Integer, nullable=False)
     info = relationship('DbInfo', back_populates='ad')
-    requirements = relationship("DbSkills", secondary=adds_skills, back_populates="ad")
+    skills = relationship("DbSkills", secondary=adds_skills, back_populates="ads")
     match = relationship('DbJobsMatches', back_populates='ad')
 
 
 class DbSkills(Base):
-    __tablename__ = 'skills'
+    __tablename__: str = 'skills'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     name = Column(String(45), nullable=False)
-    ad = relationship("DbAds", secondary=adds_skills, back_populates="requirements")
+    ads = relationship("DbAds", secondary=adds_skills, back_populates="skills")
