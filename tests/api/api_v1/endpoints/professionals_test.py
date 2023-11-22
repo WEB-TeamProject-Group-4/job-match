@@ -213,20 +213,32 @@ async def test_edit_professional_info_success(client: TestClient, test_db, db, m
     professional = DbProfessionals(**professional_data)
     db.add(professional)
 
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test Location 1'}
+    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test location'}
     info = DbInfo(**info_data)
     db.add(info)
     
     db.commit()
 
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    mocker.patch('app.crud.crud_professional.get_professional')
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
 
-    response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Test Location 2'})
+    response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Changed Location'})
     data = response.json()
 
     assert response.status_code == 201
-    changed: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+    changed_location: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
 
-    assert 'Test Location 2' == changed.location
+    assert 'Changed location' == changed_location.location
+
+
+@pytest.mark.asyncio
+async def test_edit_professional_info_error404(client: TestClient, test_db, db, mocker):
+    response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Changed Location'})
+    data = response.json()
+
+    assert response.status_code == 404
+    assert data['detail'] == "User with username TestUser not found!"
+
+    
+
