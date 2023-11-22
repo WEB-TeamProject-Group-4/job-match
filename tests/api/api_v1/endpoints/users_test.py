@@ -1,7 +1,9 @@
 import jwt
 import pytest
-from app.db.models import DbUsers
+
 from fastapi.testclient import TestClient
+
+from app.db.models import DbUsers
 from app.core.security import SECRET_KEY
 
 

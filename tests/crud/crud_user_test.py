@@ -1,5 +1,7 @@
-from fastapi import HTTPException
 import pytest
+
+from fastapi import HTTPException
+
 import app.crud.crud_user as crud_user
 from app.schemas.company import CompanyCreate
 from app.schemas.professional import ProfessionalCreate
