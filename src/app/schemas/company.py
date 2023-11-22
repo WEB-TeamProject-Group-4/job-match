@@ -30,3 +30,9 @@ class CompanyInfoCreate(BaseModel):
 
 class CompanyInfoCreateDisplay(CompanyInfoCreate):
     picture: str | None
+
+
+class CompanyInfoDisplay(CompanyInfoCreateDisplay):
+    id: str
+    active_job_ads: int
+    number_of_matches: int

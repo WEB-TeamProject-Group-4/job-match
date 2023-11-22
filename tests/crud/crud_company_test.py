@@ -4,11 +4,11 @@ from fastapi import HTTPException
 
 from app.crud import crud_company
 from app.crud.crud_company import CRUDCompany
-from app.db.models import DbCompanies, DbUsers
+from app.db.models import DbCompanies, DbUsers, DbInfo
 from app.schemas.company import CompanyInfoCreate
 
 
-async def create_dummy_company():
+async def create_dummy_company() -> tuple[DbUsers, DbCompanies]:
     user = DbUsers(
         id='dummyId',
         username='dummyUsername',
@@ -23,6 +23,15 @@ async def create_dummy_company():
         user_id=user.id
     )
     return user, company
+
+
+async def create_info() -> DbInfo:
+    info = DbInfo(
+        id='dummyInfoId',
+        description='dummyDescription',
+        location='dummyLocation'
+    )
+    return info
 
 
 info_schema = CompanyInfoCreate(
@@ -152,3 +161,20 @@ async def test_create_company_info_crud(db, test_db, mocker):
 
     assert company.info_id == result.id
     assert result.description == info_schema.description
+
+
+@pytest.mark.asyncio
+async def test_get_info_by_id(db, test_db):
+    user, company = await create_dummy_company()
+    info = await create_info()
+    company.info_id = info.id
+    db.add(user)
+    db.add(company)
+    db.add(info)
+    db.commit()
+
+    result = await CRUDCompany.get_info_by_id(db, info.id, company.id)
+
+    assert result.id == info.id
+    assert result.active_job_ads == 0
+    assert result.number_of_matches == 0
