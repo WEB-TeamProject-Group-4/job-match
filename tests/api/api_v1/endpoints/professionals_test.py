@@ -1,7 +1,9 @@
 import jwt
 import pytest
-from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
+
 from fastapi.testclient import TestClient
+
+from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.core.security import SECRET_KEY
 from app.schemas.professional import ProfessionalCreateDisplay
 
@@ -107,7 +109,6 @@ def test_get_professionals_success(client: TestClient, test_db, db, mocker):
         db.add(professional)
 
     db.commit()
-    # mocker.patch('app.crud.crud_professional.is_user_verified', return_value=create_user())
     mocker.patch('app.core.auth.get_user_by_username')
 
     response = client.get('/professionals', headers={"Authorization": f"Bearer {get_valid_token()}"})

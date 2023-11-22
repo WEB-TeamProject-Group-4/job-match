@@ -2,11 +2,9 @@ from typing import Annotated, List, Optional, Type
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-
-
 from sqlalchemy import and_
-from app.core.auth import get_current_user
 
+from app.core.auth import get_current_user
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
@@ -102,7 +100,7 @@ async def get_professional(db: Session, user: DbUsers):
 async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
     professional: DbProfessionals = await get_professional(db, user)
     resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id).first()
-    if resume.info.id == professional.info.id:
+    if resume and resume.info.id == professional.info.id:
         db.delete(resume)
         db.commit()
 
