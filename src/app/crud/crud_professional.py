@@ -1,10 +1,11 @@
-from typing import List, Optional, Type
+from typing import Annotated, List, Optional, Type
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 
 from sqlalchemy import and_
+from app.core.auth import get_current_user
 
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
@@ -52,7 +53,7 @@ async def get_info(db: Session, user: DbUsers):
     if professional.info is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Please edit your personal information.')
     
-    resumes = get_resumes(db, professional.info)
+    resumes = get_resumes(db, professional)
 
     return ProfessionalInfoDisplay(
         first_name=professional.first_name,
@@ -66,9 +67,6 @@ async def get_info(db: Session, user: DbUsers):
     
 
 def get_resumes(db: Session, professional: DbProfessionals):
-    if professional.info is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='You have no resumes')
-    
     resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id).all()
     resumes = [
             {
@@ -101,9 +99,10 @@ async def get_professional(db: Session, user: DbUsers):
     return professional
 
 
-def delete_resume_by_id(db: Session, resume_id: str):
-    resume = db.query(DbAds).filter(DbAds.id == resume_id).first()
-    if resume:
+async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
+    professional: DbProfessionals = await get_professional(db, user)
+    resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id).first()
+    if resume.info.id == professional.info.id:
         db.delete(resume)
         db.commit()
 
@@ -124,12 +123,13 @@ async def setup_main_resume(resume_id: str, db: Session, user: DbUsers):
     return {"message": "Resume not found"}
 
 
-def is_user_verified(user: DbUsers) -> Optional[None]:
+def is_user_verified(user: Annotated[DbUsers, Depends(get_current_user)]) -> Optional[None]:
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Please verify your account.'
         )
+    return user
 
 async def get_all_approved_professionals(db: Session, first_name: Optional[str],last_name: Optional[str],
                                          status: Optional[str], location: Optional[str], page: Optional[int], page_items: Optional[int]) -> List[Type[DbProfessionals]]:
@@ -142,8 +142,6 @@ async def get_all_approved_professionals(db: Session, first_name: Optional[str],
         queries.append(DbProfessionals.status == status)
     if location:
         queries.append(DbInfo.location.ilike(f"%{location}%"))
-
-    # professionals = db.query(DbProfessionals).join(DbProfessionals.user).filter(*queries).all()
 
     page = page if page is not None else 1
     page_items = page_items if page_items is not None else DEFAULT_VALUE_ITEMS_PER_PAGE
@@ -165,7 +163,12 @@ async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
         professional.info = new_info
         db.commit()
 
-        return {'message': 'Your summary has been updated successfully'}
+    else:
+        professional.info.description = summary
+        db.commit()
+    
+    
+    return {'message': 'Your summary has been updated successfully'}
     
 
 
