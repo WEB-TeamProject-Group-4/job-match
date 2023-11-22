@@ -89,3 +89,19 @@ async def get_company_info(db: Annotated[Session, Depends(get_db)],
         info = await CRUDCompany.get_info_by_id(db, current_user.company[0].info_id,
                                                 current_user.company[0].id)
         return info
+
+
+@router.patch('/companies/info', response_model=company.CompanyInfoCreateDisplay)
+async def update_info(db: Annotated[Session, Depends(get_db)],
+                      current_user: Annotated[DbUsers, Depends(get_current_user)],
+                      description: Annotated[str, Query(description='Optional description update parameter')] = None,
+                      location: Annotated[str, Query(description='Optional location update parameter')] = None
+                      ):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    else:
+        new_info = await CRUDCompany.update_info(db, current_user.company[0].info_id, description, location)
+        return new_info

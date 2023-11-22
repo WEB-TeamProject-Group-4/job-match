@@ -41,7 +41,7 @@ info_schema = CompanyInfoCreate(
 
 
 @pytest.mark.asyncio
-async def test_companies_crud(db, test_db):
+async def test_get_multi(db, test_db):
     user, company = await create_dummy_company()
     db.add(user)
     db.add(company)
@@ -59,7 +59,7 @@ async def test_companies_crud(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_get_company_by_id_crud(db, test_db):
+async def test_get_by_id(db, test_db):
     user, company = await create_dummy_company()
     db.add(user)
     db.add(company)
@@ -72,7 +72,7 @@ async def test_get_company_by_id_crud(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_update_company_crud(db, test_db):
+async def test_update(db, test_db):
     user, company = await create_dummy_company()
     db.add(user)
     db.add(company)
@@ -89,7 +89,7 @@ async def test_update_company_crud(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_delete_company_by_id_crud(db, test_db, mocker):
+async def test_delete_by_id(db, test_db, mocker):
     user, company = await create_dummy_company()
     db.add(user)
     db.add(company)
@@ -150,7 +150,7 @@ async def test_is_owner(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_create_company_info_crud(db, test_db, mocker):
+async def test_create_info(db, test_db, mocker):
     user, company = await create_dummy_company()
     db.add(user)
     db.add(company)
@@ -178,3 +178,18 @@ async def test_get_info_by_id(db, test_db):
     assert result.id == info.id
     assert result.active_job_ads == 0
     assert result.number_of_matches == 0
+
+
+@pytest.mark.asyncio
+async def test_update_info(db, test_db):
+    info = await create_info()
+    db.add(info)
+    db.commit()
+    new_description = 'newDummyDescription'
+    new_location = 'newDummyLocation'
+
+    result = await CRUDCompany.update_info(db, info.id, new_description, new_location)
+
+    assert result.id == info.id
+    assert result.description == new_description
+    assert result.location == new_location

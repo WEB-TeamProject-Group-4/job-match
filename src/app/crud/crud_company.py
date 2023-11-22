@@ -74,6 +74,16 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel]):
         return CompanyInfoDisplay(**info.__dict__, active_job_ads=active_job_ads,
                                   number_of_matches=number_of_matches)
 
+    @staticmethod
+    async def update_info(db: Session, info_id: str, description: str | None, location: str | None) -> InfoModel:
+        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        if description:
+            info.description = description
+        if location:
+            info.location = location
+        db.commit()
+        return info
+
 
 async def is_admin(user: UserModelType) -> bool:
     return user.type == 'admin'
@@ -81,4 +91,3 @@ async def is_admin(user: UserModelType) -> bool:
 
 async def is_owner(company: CompanyModelType, user_id: str) -> bool:
     return company.user_id == user_id
-
