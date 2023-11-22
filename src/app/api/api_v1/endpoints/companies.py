@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.crud.crud_user import create_user
-from app.crud import crud_company
 from app.crud.crud_company import CRUDCompany
 from app.db.database import get_db
 from app.db.models import DbUsers
@@ -75,5 +74,5 @@ async def create_company_info(db: Annotated[Session, Depends(get_db)],
             detail='Please verify your account.'
         )
     else:
-        info = await crud_company.create_company_info_crud(db, current_user.company[0].id, schema)
+        info = await CRUDCompany.create_info(db, current_user.company[0].id, schema)
         return info

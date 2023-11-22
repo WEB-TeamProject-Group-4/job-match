@@ -1,15 +1,17 @@
-from typing import List, Type, TypeVar, Generic
+from typing import Type, TypeVar, Generic
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app.db.models import DbCompanies, DbUsers, DbInfo
+from app.schemas.company import CompanyInfoCreate
 
 CompanyModelType = TypeVar('CompanyModelType', bound=Type[DbCompanies])
 UserModelType = TypeVar('UserModelType', bound=Type[DbUsers])
+InfoModel = TypeVar('InfoModel', bound=DbInfo)
 
 
-class CRUDCompany(Generic[CompanyModelType]):
+class CRUDCompany(Generic[CompanyModelType, InfoModel]):
     @staticmethod
     async def get_multi(db: Session, name: str | None, page: int) -> list[CompanyModelType]:
         queries = [DbUsers.is_verified == 1]
@@ -51,6 +53,17 @@ class CRUDCompany(Generic[CompanyModelType]):
             db.commit()
             return
 
+    @staticmethod
+    async def create_info(db: Session, company_id: str, schema: CompanyInfoCreate) -> InfoModel:
+        company = await CRUDCompany.get_by_id(db, company_id)
+        new_info = DbInfo(**dict(schema))
+        db.add(new_info)
+        db.commit()
+        db.refresh(new_info)
+        company.info_id = new_info.id
+        db.commit()
+        return new_info
+
 
 async def is_admin(user: UserModelType) -> bool:
     return user.type == 'admin'
@@ -59,13 +72,3 @@ async def is_admin(user: UserModelType) -> bool:
 async def is_owner(company: CompanyModelType, user_id: str) -> bool:
     return company.user_id == user_id
 
-
-async def create_company_info_crud(db: Session, company_id: str, schema) -> DbInfo:
-    company = await CRUDCompany.get_by_id(db, company_id)
-    new_info = DbInfo(**dict(schema))
-    db.add(new_info)
-    db.commit()
-    db.refresh(new_info)
-    company.info_id = new_info.id
-    db.commit()
-    return new_info

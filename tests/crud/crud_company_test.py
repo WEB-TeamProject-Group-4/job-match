@@ -148,7 +148,7 @@ async def test_create_company_info_crud(db, test_db, mocker):
     db.commit()
     mocker.patch('app.crud.crud_company.CRUDCompany.get_by_id', return_value=company)
 
-    result = await crud_company.create_company_info_crud(db, company.id, info_schema)
+    result = await CRUDCompany.create_info(db, company.id, info_schema)
 
     assert company.info_id == result.id
     assert result.description == info_schema.description
