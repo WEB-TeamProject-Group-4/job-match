@@ -1,55 +1,59 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional, Type
 
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
+
+from sqlalchemy import and_
+from app.core.auth import get_current_user
 
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
-from app.schemas.professional import ProfessionalInfoCreate, ProfessionalInfoDisplay
+from app.schemas.professional import ProfessionalInfoDisplay
 
 
-async def edit_info(db: Session, schema: ProfessionalInfoCreate, user: DbUsers):
-    professional = await get_professional(db, user)
+DEFAULT_VALUE_ITEMS_PER_PAGE = 10
 
-    if schema.first_name != '' or schema.last_name != '':
-        await update_name(db, professional, schema.first_name, schema.last_name)
 
-    if professional.info is None:
-        new_info = DbInfo(
-            description=schema.summary,
-            location=schema.location
-        )
+async def edit_info(db: Session, user: DbUsers, first_name: Optional[str], 
+                    last_name: Optional[str], location: str):
+    
+    professional: DbProfessionals = await get_professional(db, user)
+   
+    if first_name:
+        professional.first_name = first_name.capitalize()
+    if last_name:
+        professional.last_name = last_name.capitalize()
+    if location:
+        if professional.info is None:
+            await create_professional_info(db, professional, summary="Your default summary", location=location)
+        else:
+            professional.info.location = location.capitalize()
+    
+    db.commit()
+    
+    return {"message": "Update successful"}
+
+
+async def create_professional_info(db: Session, professional: DbProfessionals, summary: str, location: str):
+    if summary and location:
+        new_info = DbInfo(description=summary,location=location)
         db.add(new_info)
         db.commit()
         db.refresh(new_info)
 
         professional.info = new_info
         db.commit()
-    
+        
     else:
-        if schema.summary != '':
-            professional.info.description = schema.summary
-        if schema.location != '': 
-            professional.info.location = schema.location
-        db.commit()
-
-    return {"message": "Update successful"}
-
-
-async def update_name(db: Session, professional: DbProfessionals, first_name: Optional[str], last_name: Optional[str]):
-    if first_name != '':
-        professional.first_name = first_name
-    if last_name != '':
-        professional.last_name = last_name
-
-    db.commit()
-
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Fields should be valid: 'summary' and 'location'!")
+    
 
 async def get_info(db: Session, user: DbUsers):
     professional: DbProfessionals = await get_professional(db, user)
     if professional.info is None:
-        return {"message": "Professional Info not available"}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Please edit your personal information.')
     
-    resumes = get_resumes(db, professional.info)
+    resumes = get_resumes(db, professional)
 
     return ProfessionalInfoDisplay(
         first_name=professional.first_name,
@@ -62,8 +66,8 @@ async def get_info(db: Session, user: DbUsers):
     )
     
 
-def get_resumes(db: Session, professional_info: DbInfo):
-    resumes_db = db.query(DbAds).filter(DbAds.info_id == professional_info.id).all()
+def get_resumes(db: Session, professional: DbProfessionals):
+    resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id).all()
     resumes = [
             {
                 "id": resume.id,
@@ -94,13 +98,78 @@ async def get_professional(db: Session, user: DbUsers):
     
     return professional
 
-def delete_resume_by_id(db: Session, resume_id: str):
-    ad = db.query(DbAds).filter(DbAds.id == resume_id).first()
-    if ad:
-        db.delete(ad)
+
+async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
+    professional: DbProfessionals = await get_professional(db, user)
+    resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id).first()
+    if resume.info.id == professional.info.id:
+        db.delete(resume)
         db.commit()
 
-        return {"message": "Deleted successfully"}
+        raise HTTPException(status_code=204, detail="Main resume changed successfully")
+    
+    raise HTTPException(status_code=404, detail="Resume not found")
+
+
+async def setup_main_resume(resume_id: str, db: Session, user: DbUsers):
+    professional: DbProfessionals = await get_professional(db, user)
+    resume = db.query(DbAds).filter(DbAds.id == resume_id).first()
+    if resume:
+        professional.info.main_ad = resume.id
+        db.commit()
+
+        return {'message': 'Main resume changed successfully'}
     
     return {"message": "Resume not found"}
 
+
+def is_user_verified(user: Annotated[DbUsers, Depends(get_current_user)]) -> Optional[None]:
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    return user
+
+async def get_all_approved_professionals(db: Session, first_name: Optional[str],last_name: Optional[str],
+                                         status: Optional[str], location: Optional[str], page: Optional[int], page_items: Optional[int]) -> List[Type[DbProfessionals]]:
+    queries = [DbUsers.is_verified == True]
+    if first_name:
+        queries.append(DbProfessionals.first_name.like(f"%{first_name}%"))
+    if last_name:
+        queries.append(DbProfessionals.last_name.like(f"%{last_name}%"))
+    if status:
+        queries.append(DbProfessionals.status == status)
+    if location:
+        queries.append(DbInfo.location.ilike(f"%{location}%"))
+
+    page = page if page is not None else 1
+    page_items = page_items if page_items is not None else DEFAULT_VALUE_ITEMS_PER_PAGE
+
+    professionals = (db.query(DbProfessionals).join(DbProfessionals.user).outerjoin(DbProfessionals.info).filter(*queries))
+    total_elements = professionals.count()
+
+    return professionals.offset((page - 1) * page_items).limit(page_items).all()
+    
+    
+async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
+    professional: DbProfessionals = await get_professional(db, user)
+    if professional.info is None:
+        new_info = DbInfo(description=summary,location='')
+        db.add(new_info)
+        db.commit()
+        db.refresh(new_info)
+
+        professional.info = new_info
+        db.commit()
+
+    else:
+        professional.info.description = summary
+        db.commit()
+    
+    
+    return {'message': 'Your summary has been updated successfully'}
+    
+
+
+    

@@ -108,6 +108,7 @@ def test_get_professionals_success(client: TestClient, test_db, db, mocker):
 
     db.commit()
     mocker.patch('app.core.auth.get_user_by_username', return_value=create_user())
+    mocker.patch('app.crud.crud_professional.is_user_verified')
 
     response = client.get('/professionals', headers={"Authorization": f"Bearer {get_valid_token()}"})
     data = response.json()
