@@ -1,7 +1,9 @@
+from typing import Annotated, List
+
 from fastapi import Depends, APIRouter
 from sqlalchemy.orm import Session
+
 from app.schemas.user import UserDisplay, UserCreate
-from typing import Annotated, List
 from app.db.database import get_db
 from app.db.models import DbUsers 
 from app.core.auth import get_current_user

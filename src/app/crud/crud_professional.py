@@ -2,11 +2,9 @@ from typing import Annotated, List, Optional, Type
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-
-
 from sqlalchemy import and_
-from app.core.auth import get_current_user
 
+from app.core.auth import get_current_user
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
