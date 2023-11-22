@@ -102,7 +102,7 @@ async def get_professional(db: Session, user: DbUsers):
 async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
     professional: DbProfessionals = await get_professional(db, user)
     resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id).first()
-    if resume.info.id == professional.info.id:
+    if resume and resume.info.id == professional.info.id:
         db.delete(resume)
         db.commit()
 
