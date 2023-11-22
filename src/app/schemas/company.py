@@ -20,7 +20,7 @@ class CompanyDisplay(BaseModel):
 
 
 class UpdateCompanyDisplay(CompanyDisplay):
-    contacts: str
+    contacts: str | None
 
 
 class CompanyInfoCreate(BaseModel):
