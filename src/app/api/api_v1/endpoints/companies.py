@@ -8,18 +8,17 @@ from app.crud.crud_user import create_user
 from app.crud.crud_company import CRUDCompany
 from app.db.database import get_db
 from app.db.models import DbUsers
-from app.schemas.company import (CompanyCreate, CompanyCreateDisplay, CompanyDisplay,
-                                 UpdateCompanyDisplay, CompanyInfoCreate, CompanyInfoCreateDisplay)
+from app.schemas import company
 
 router = APIRouter(tags=['company'])
 
 
-@router.post('/companies', response_model=CompanyCreateDisplay)
-async def create_company(schema: CompanyCreate, db: Annotated[Session, Depends(get_db)]):
+@router.post('/companies', response_model=company.CompanyCreateDisplay)
+async def create_company(schema: company.CompanyCreate, db: Annotated[Session, Depends(get_db)]):
     return await create_user(db, schema)
 
 
-@router.get('/companies', response_model=List[CompanyDisplay])
+@router.get('/companies', response_model=List[company.CompanyDisplay])
 async def get_companies(db: Annotated[Session, Depends(get_db)],
                         current_user: Annotated[DbUsers, Depends(get_current_user)],
                         name: Annotated[str, Query(description='Optional name search parameter')] = None,
@@ -28,7 +27,7 @@ async def get_companies(db: Annotated[Session, Depends(get_db)],
     return companies
 
 
-@router.get('/companies/{company_id}', response_model=CompanyDisplay)
+@router.get('/companies/{company_id}', response_model=company.CompanyDisplay)
 async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
                             company_id: Annotated[str, Path(description='Mandatory company id path parameter')]):
     company = await CRUDCompany.get_by_id(db, company_id)
@@ -40,7 +39,7 @@ async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
     return company
 
 
-@router.patch('/companies', response_model=UpdateCompanyDisplay)
+@router.patch('/companies', response_model=company.UpdateCompanyDisplay)
 async def update_company(db: Annotated[Session, Depends(get_db)],
                          current_user: Annotated[DbUsers, Depends(get_current_user)],
                          name: Annotated[str, Query(description='Optional name update parameter')] = None,
@@ -63,10 +62,10 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
     return await CRUDCompany.delete_by_id(db, company_id, current_user.id)
 
 
-@router.post('/companies/info', response_model=CompanyInfoCreateDisplay)
+@router.post('/companies/info', response_model=company.CompanyInfoCreateDisplay)
 async def create_company_info(db: Annotated[Session, Depends(get_db)],
                               current_user: Annotated[DbUsers, Depends(get_current_user)],
-                              schema: CompanyInfoCreate
+                              schema: company.CompanyInfoCreate
                               ):
     if not current_user.is_verified:
         raise HTTPException(
@@ -76,3 +75,33 @@ async def create_company_info(db: Annotated[Session, Depends(get_db)],
     else:
         info = await CRUDCompany.create_info(db, current_user.company[0].id, schema)
         return info
+
+
+@router.get('/companies/info/', response_model=company.CompanyInfoDisplay)
+async def get_company_info(db: Annotated[Session, Depends(get_db)],
+                           current_user: Annotated[DbUsers, Depends(get_current_user)]):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    else:
+        info = await CRUDCompany.get_info_by_id(db, current_user.company[0].info_id,
+                                                current_user.company[0].id)
+        return info
+
+
+@router.patch('/companies/info', response_model=company.CompanyInfoCreateDisplay)
+async def update_info(db: Annotated[Session, Depends(get_db)],
+                      current_user: Annotated[DbUsers, Depends(get_current_user)],
+                      description: Annotated[str, Query(description='Optional description update parameter')] = None,
+                      location: Annotated[str, Query(description='Optional location update parameter')] = None
+                      ):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Please verify your account.'
+        )
+    else:
+        new_info = await CRUDCompany.update_info(db, current_user.company[0].info_id, description, location)
+        return new_info

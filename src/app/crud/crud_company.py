@@ -3,12 +3,12 @@ from typing import Type, TypeVar, Generic
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.db.models import DbCompanies, DbUsers, DbInfo
-from app.schemas.company import CompanyInfoCreate
+from app.db.models import DbCompanies, DbUsers, DbInfo, DbAds, DbJobsMatches
+from app.schemas.company import CompanyInfoCreate, CompanyInfoDisplay
 
 CompanyModelType = TypeVar('CompanyModelType', bound=Type[DbCompanies])
 UserModelType = TypeVar('UserModelType', bound=Type[DbUsers])
-InfoModel = TypeVar('InfoModel', bound=DbInfo)
+InfoModel = TypeVar('InfoModel', bound=[DbInfo, Type[DbInfo]])
 
 
 class CRUDCompany(Generic[CompanyModelType, InfoModel]):
@@ -64,6 +64,26 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel]):
         db.commit()
         return new_info
 
+    @staticmethod
+    async def get_info_by_id(db: Session, info_id: str, company_id: str) -> CompanyInfoDisplay:
+        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        active_job_ads = db.query(DbAds).filter(DbAds.info_id == info_id,
+                                                DbAds.status == 'active').count()
+        number_of_matches = db.query(DbJobsMatches).filter(DbJobsMatches.company_id == company_id).count()
+
+        return CompanyInfoDisplay(**info.__dict__, active_job_ads=active_job_ads,
+                                  number_of_matches=number_of_matches)
+
+    @staticmethod
+    async def update_info(db: Session, info_id: str, description: str | None, location: str | None) -> InfoModel:
+        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        if description:
+            info.description = description
+        if location:
+            info.location = location
+        db.commit()
+        return info
+
 
 async def is_admin(user: UserModelType) -> bool:
     return user.type == 'admin'
@@ -71,4 +91,3 @@ async def is_admin(user: UserModelType) -> bool:
 
 async def is_owner(company: CompanyModelType, user_id: str) -> bool:
     return company.user_id == user_id
-
