@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, LargeBinary
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -7,7 +7,7 @@ adds_skills = Table(
     'adds_skills', Base.metadata,
     Column('ad_id', String(50), ForeignKey('ads.id'), primary_key=True),
     Column('skill_id', String(50), ForeignKey('skills.id'), primary_key=True),
-    Column('level', String(45)),
+    Column('level', String(45), nullable=True, default=None)
 )
 
 

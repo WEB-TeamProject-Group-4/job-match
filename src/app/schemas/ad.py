@@ -3,16 +3,7 @@ from typing import List
 from pydantic import BaseModel
 
 
-class AdCreate(BaseModel):
-    description: str
-    location: str
-    status: str
-    min_salary: int
-    max_salary: int
-    skills: List[str]
-
-
-class AdCreateDisplay(BaseModel):
+class Ad(BaseModel):
     description: str
     location: str
     status: str
@@ -20,9 +11,24 @@ class AdCreateDisplay(BaseModel):
     max_salary: int
 
 
-class SkillCreate(BaseModel):
+class AdCreate(Ad):
+    info_id: str
+
+
+class AdSkills(BaseModel):
     name: str
 
 
-class SkillCreateDisplay(BaseModel):
-    name: str
+class AdDisplay(Ad):
+    skills: List[AdSkills]
+
+
+class IncludeSkillToAdd(BaseModel):
+    ad_id: str
+    skill_id: str
+    level: str
+
+
+class IncludeSkillToAddDisplay(BaseModel):
+    skill_name: str
+    level: str
