@@ -59,7 +59,7 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
                          company_id: Annotated[str, Path(description='Mandatory company id path parameter')],
                          current_user: Annotated[DbUsers, Depends(get_current_user)]
                          ):
-    return await CRUDCompany.delete_by_id(db, company_id, current_user.id)
+    return await CRUDCompany.delete_by_id(db, company_id, current_user)
 
 
 @router.post('/companies/info', response_model=company.CompanyInfoCreateDisplay)
@@ -105,3 +105,11 @@ async def update_info(db: Annotated[Session, Depends(get_db)],
     else:
         new_info = await CRUDCompany.update_info(db, current_user.company[0].info_id, description, location)
         return new_info
+
+
+@router.delete('/companies/info/{info_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_info(db: Annotated[Session, Depends(get_db)],
+                      current_user: Annotated[DbUsers, Depends(get_current_user)],
+                      info_id: Annotated[str, Path(description='Mandatory info id path parameter')]
+                      ):
+    return await CRUDCompany.delete_info_by_id(db, info_id, current_user)

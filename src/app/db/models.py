@@ -71,7 +71,7 @@ class DbInfo(Base):
     main_ad = Column(String(50), nullable=True, default=None)
     is_deleted = Column(Boolean, default=False)
     company = relationship('DbCompanies', back_populates='info', cascade='all, delete-orphan')
-    professional = relationship('DbProfessionals', back_populates='info', cascade='all, delete-orphan')
+    professional = relationship('DbProfessionals', back_populates='info')
     ad = relationship('DbAds', back_populates='info', cascade='all, delete-orphan')
 
 
