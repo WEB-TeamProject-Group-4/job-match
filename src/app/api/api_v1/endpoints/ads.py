@@ -41,11 +41,11 @@ async def get_ads(db: Annotated[Session, Depends(get_db)],
 @router.put('/ads', response_model=AdDisplay)
 async def update_ad(ad_id: str, db: Annotated[Session, Depends(get_db)],
                     current_user: Annotated[DbUsers, Depends(get_current_user)],
-                    description: Annotated[str, Query(description='Optional name update parameter')] = None,
-                    location: Annotated[str, Query(description='Optional contact update parameter')] = None,
+                    description: Annotated[str, Query(description='Optional description update parameter')] = None,
+                    location: Annotated[str, Query(description='Optional location update parameter')] = None,
                     ad_status: Annotated[str, Query(description='Optional status update parameter')] = None,
-                    min_salary: Annotated[int, Query(description='Optional status update parameter')] = None,
-                    max_salary: Annotated[int, Query(description='Optional status update parameter')] = None):
+                    min_salary: Annotated[int, Query(description='Optional minimal salary update parameter')] = None,
+                    max_salary: Annotated[int, Query(description='Optional maximal salary update parameter')] = None):
     updated_ad = await update_ad_crud(db, ad_id, description, location, ad_status, min_salary, max_salary)
     return updated_ad
 
