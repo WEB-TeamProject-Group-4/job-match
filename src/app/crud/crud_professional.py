@@ -125,7 +125,11 @@ def is_user_verified(user: Annotated[DbUsers, Depends(get_current_user)]) -> Opt
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Please verify your account.'
+            detail='Please verify your account'
+        )
+    if not user.type == 'professional':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN
         )
     return user
 

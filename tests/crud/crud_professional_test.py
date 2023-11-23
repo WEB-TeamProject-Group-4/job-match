@@ -218,8 +218,7 @@ def test_is_user_verified_success(test_db, filling_test_db):
     assert result.is_verified == True
 
 
-@pytest.mark.asyncio
-def test_is_user_verified_error403(db, test_db):
+def test_is_user_verified_error403_notVerified(db, test_db):
     user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 0) # this should not be counted, is_verified == 0
     db.add(user)
 
@@ -227,7 +226,17 @@ def test_is_user_verified_error403(db, test_db):
         crud_professional.is_user_verified(user)
 
     assert exception.value.status_code == 403
-    assert exception.value.detail == 'Please verify your account.'
+    assert exception.value.detail == 'Please verify your account'
+
+
+def test_is_user_verified_error403(db, test_db):
+    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='company', is_verified = 1) # should be not allowed for companies type == 'company'
+    db.add(user)
+
+    with pytest.raises(HTTPException) as exception:
+        crud_professional.is_user_verified(user)
+
+    assert exception.value.status_code == 403
 
 
 @pytest.mark.asyncio

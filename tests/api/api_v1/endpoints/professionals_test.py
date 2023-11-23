@@ -13,7 +13,8 @@ def create_user():
         username='TestUser',
         password='TestPassword',
         email='test.email@email.com',
-        type='admin'
+        type='professional',
+        is_verified=1
     )
 
 
@@ -85,9 +86,9 @@ async def test_get_professional_not_authenticated(client: TestClient):
 def test_get_professionals_success(client: TestClient, test_db, db, mocker):
     user_data_list = [
         {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
-         'type': 'admin', 'is_verified': 0},  # this should not be counted, is_verified == 0
+         'type': 'professional', 'is_verified': 0},  # this should not be counted, is_verified == 0
         {'id': 'test-id-two', "username": "User2", "email": "test2@example.com", "password": "password123",
-         'type': 'company', 'is_verified': 1},
+         'type': 'professional', 'is_verified': 1}, 
         {'id': 'test-id-three', "username": "User3", "email": "test3@example.com", "password": "password123",
          'type': 'professional', 'is_verified': 1}
 
@@ -109,7 +110,7 @@ def test_get_professionals_success(client: TestClient, test_db, db, mocker):
         db.add(professional)
 
     db.commit()
-    mocker.patch('app.core.auth.get_user_by_username')
+    mocker.patch('app.core.auth.get_user_by_username', return_value = create_user())
 
     response = client.get('/professionals', headers={"Authorization": f"Bearer {get_valid_token()}"})
     data = response.json()
