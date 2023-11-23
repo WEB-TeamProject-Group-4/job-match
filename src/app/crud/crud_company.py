@@ -1,4 +1,4 @@
-from typing import Type, TypeVar, Generic
+from typing import Type, TypeVar, Generic, Union
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -6,12 +6,12 @@ from fastapi import HTTPException, status
 from app.db.models import DbCompanies, DbUsers, DbInfo, DbAds, DbJobsMatches
 from app.schemas.company import CompanyInfoCreate, CompanyInfoDisplay
 
-CompanyModelType = TypeVar('CompanyModelType', bound=Type[DbCompanies])
-UserModelType = TypeVar('UserModelType', bound=Type[DbUsers])
-InfoModel = TypeVar('InfoModel', bound=[DbInfo, Type[DbInfo]])
+CompanyModelType = TypeVar('CompanyModelType', bound=Union[Type[DbCompanies], DbCompanies])
+UserModelType = TypeVar('UserModelType', bound=Union[Type[DbUsers], DbUsers])
+InfoModel = TypeVar('InfoModel', bound=Union[DbInfo, Type[DbInfo]])
 
 
-class CRUDCompany(Generic[CompanyModelType, InfoModel]):
+class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
     @staticmethod
     async def get_multi(db: Session, name: str | None, page: int) -> list[CompanyModelType]:
         queries = [DbUsers.is_verified == 1]
@@ -40,10 +40,9 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel]):
         return company
 
     @staticmethod
-    async def delete_by_id(db: Session, company_id: str, user_id: str) -> None:
-        user = db.query(DbUsers).filter(DbUsers.id == user_id).first()
+    async def delete_by_id(db: Session, company_id: str, user: UserModelType) -> None:
         company = db.query(DbCompanies).filter(DbCompanies.id == company_id).first()
-        if not await is_admin(user) and not await is_owner(company, user_id):
+        if not await is_admin(user) and not await is_owner(company, user.id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='Deletion of the company is restricted to administrators or the company owner.'
@@ -83,6 +82,21 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel]):
             info.location = location
         db.commit()
         return info
+
+    @staticmethod
+    async def delete_info_by_id(db: Session, info_id: str, user: UserModelType):
+        company_id: int = user.company[0].id
+        company = db.query(DbCompanies).filter(DbCompanies.id == company_id).first()
+        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        if not await is_admin(user) and not await is_owner(company, user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Deletion of the company is restricted to administrators or the company owner.'
+            )
+        else:
+            db.delete(info)
+            db.commit()
+            return
 
 
 async def is_admin(user: UserModelType) -> bool:

@@ -99,14 +99,14 @@ async def test_delete_by_id(db, test_db, mocker):
 
     # Test when user is neither admin nor owner
     with pytest.raises(HTTPException) as exception:
-        await CRUDCompany.delete_by_id(db, 'dummyCompanyId', 'dummyId')
+        await CRUDCompany.delete_by_id(db, 'dummyCompanyId', user)
     exception_info = exception.value
     assert exception_info.status_code == 403
 
     # Test when user is admin
     mocker.patch('app.crud.crud_company.is_admin', return_value=True)
 
-    await CRUDCompany.delete_by_id(db, 'dummyCompanyId', 'dummyId')
+    await CRUDCompany.delete_by_id(db, 'dummyCompanyId', user)
 
     assert db.query(DbCompanies).all() == []
 
@@ -193,3 +193,27 @@ async def test_update_info(db, test_db):
     assert result.id == info.id
     assert result.description == new_description
     assert result.location == new_location
+
+
+@pytest.mark.asyncio
+async def test_delete_info(db, test_db, mocker):
+    user, company = await create_dummy_company()
+    info = await create_info()
+    company.info_id = info.id
+    db.add(user)
+    db.add(company)
+    db.add(info)
+    db.commit()
+
+    mocker.patch('app.crud.crud_company.is_admin', return_value=False)
+    mocker.patch('app.crud.crud_company.is_owner', return_value=False)
+
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.delete_info_by_id(db, info.id, user)
+    exception_info = exception.value
+    assert exception_info.status_code == 403
+
+    mocker.patch('app.crud.crud_company.is_owner', return_value=True)
+    await CRUDCompany.delete_info_by_id(db, info.id, user)
+
+    assert db.query(DbInfo).filter(DbInfo.id == info.id).all() == []
