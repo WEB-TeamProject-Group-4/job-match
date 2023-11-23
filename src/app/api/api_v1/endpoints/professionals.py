@@ -24,7 +24,7 @@ async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
 
 @router.get('/professionals', response_model=List[ProfessionalDisplay])
 async def get_professionals(db: Annotated[Session, Depends(get_db)],
-                      _: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
+                      _: Annotated[UserDisplay, Depends(get_current_user)],
                       search_by_first_name: Annotated[str, Query(description='Optional first name search parameter')] = None,
                       search_by_last_name: Annotated[str, Query(description='Optional last name search parameter')] = None,
                       search_by_status: Annotated[ProfessionalStatus, Query(description='Optional status search parameter')] = None,
