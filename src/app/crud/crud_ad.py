@@ -168,7 +168,9 @@ async def delete_skill_crud(db: Session, skill_name: str) -> None:
 
 async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: SkillLevel) -> IncludeSkillToAddDisplay:
     ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
+    ad_id: int = ad.id
     skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
+    skill_id: int = skill.id
 
     if not ad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
@@ -176,8 +178,8 @@ async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
 
     skill_added = db.query(adds_skills) \
-        .join(DbSkills, adds_skills.c.skill_id == DbSkills.id) \
-        .join(DbAds, adds_skills.c.ad_id == DbAds.id) \
+        .join(DbSkills, adds_skills.c.skill_id == skill_id) \
+        .join(DbAds, adds_skills.c.ad_id == ad_id) \
         .filter(DbAds.id == ad_id, DbSkills.name == skill_name) \
         .first()
 
@@ -200,7 +202,9 @@ async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: 
 
 async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) -> None:
     ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
+    ad_id: int = ad.id
     skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
+    skill_id: int = skill.id
 
     if not ad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
@@ -208,8 +212,8 @@ async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) ->
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
 
     skill_to_remove = (db.query(adds_skills)
-                       .join(DbSkills, adds_skills.c.skill_id == DbSkills.id)
-                       .join(DbAds, adds_skills.c.ad_id == DbAds.id)
+                       .join(DbSkills, adds_skills.c.skill_id == skill_id)
+                       .join(DbAds, adds_skills.c.ad_id == ad_id)
                        .filter(DbAds.id == ad_id, DbSkills.name == skill_name)
                        .first())
 

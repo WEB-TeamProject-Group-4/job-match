@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -30,6 +30,7 @@ class DbUsers(Base):
     email = Column(String(45), nullable=False, unique=True)
     type = Column(String(45), nullable=False)
     is_verified = Column(Boolean, default=False)
+    is_deleted = Column(Boolean, default=False)
     professional = relationship('DbProfessionals', back_populates='user', cascade='all, delete-orphan')
     company = relationship('DbCompanies', back_populates='user', cascade='all, delete-orphan')
 
@@ -41,6 +42,7 @@ class DbProfessionals(Base):
     last_name = Column(String(45), nullable=False)
     status = Column(String(45), nullable=True, default=None)
     user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
+    is_deleted = Column(Boolean, default=False)
     user = relationship('DbUsers', back_populates='professional', cascade='all, delete-orphan', single_parent=True)
     info_id = Column(String(50), ForeignKey('info.id'), nullable=True, default=None)
     info = relationship('DbInfo', back_populates='professional', cascade='all, delete-orphan', single_parent=True)
@@ -53,6 +55,7 @@ class DbCompanies(Base):
     name = Column(String(45), nullable=False, unique=True)
     contacts = Column(String(45), nullable=True, default=None)
     user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
+    is_deleted = Column(Boolean, default=False)
     user = relationship('DbUsers', back_populates='company', cascade='all, delete-orphan', single_parent=True)
     info_id = Column(String(50), ForeignKey('info.id'), nullable=True, default=None)
     info = relationship('DbInfo', back_populates='company', cascade='all, delete-orphan', single_parent=True)
@@ -64,8 +67,9 @@ class DbInfo(Base):
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     description = Column(String(45), nullable=True)
     location = Column(String(45), nullable=True)
-    picture = Column(String(100), nullable=True, default=None)
+    picture = Column(BINARY, nullable=True, default=None)
     main_ad = Column(String(50), nullable=True, default=None)
+    is_deleted = Column(Boolean, default=False)
     company = relationship('DbCompanies', back_populates='info', cascade='all, delete-orphan')
     professional = relationship('DbProfessionals', back_populates='info', cascade='all, delete-orphan')
     ad = relationship('DbAds', back_populates='info', cascade='all, delete-orphan')
@@ -79,6 +83,7 @@ class DbAds(Base):
     status = Column(String(45), nullable=False)
     min_salary = Column(Integer, nullable=False)
     max_salary = Column(Integer, nullable=False)
+    is_deleted = Column(Boolean, default=False)
     info_id = Column(String(50), ForeignKey('info.id'), nullable=False)
     info = relationship('DbInfo', back_populates='ad')
     skills = relationship("DbSkills", secondary=adds_skills, back_populates="ads")
@@ -89,4 +94,5 @@ class DbSkills(Base):
     __tablename__: str = 'skills'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     name = Column(String(45), nullable=False)
+    is_deleted = Column(Boolean, default=False)
     ads = relationship("DbAds", secondary=adds_skills, back_populates="skills")
