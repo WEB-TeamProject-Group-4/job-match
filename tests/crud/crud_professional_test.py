@@ -9,7 +9,6 @@ from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
 
-
 @pytest.mark.asyncio
 async def test_edit_info_success(db, mocker, test_db):
     user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
