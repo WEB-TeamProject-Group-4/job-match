@@ -1,22 +1,22 @@
 import jwt
 import pytest
-from app.db.models import DbCompanies, DbUsers
+from app.db.models import DbCompanies, DbUsers, DbInfo
 from fastapi.testclient import TestClient
 from app.core.security import SECRET_KEY
-from app.schemas.company import CompanyCreateDisplay
+from app.schemas.company import CompanyCreateDisplay, CompanyInfoCreate
 
 
 def create_user():
     return DbUsers(
-        username='TestUser',
-        password='TestPassword',
-        email='test.email@email.com',
+        username='dummyUserId',
+        password='dummyPassword',
+        email='dummy@email.com',
         type='admin'
     )
 
 
 def get_valid_token():
-    return jwt.encode({'username': 'TestUser'}, SECRET_KEY, algorithm='HS256')
+    return jwt.encode({'username': 'dummyUserId'}, SECRET_KEY, algorithm='HS256')
 
 
 def create_company() -> CompanyCreateDisplay:
@@ -24,6 +24,26 @@ def create_company() -> CompanyCreateDisplay:
         username='TestCOmpany',
         name='Company Name'
     )
+
+
+async def fill_test_db(db):
+    user = DbUsers(id='dummyUserId', username='dummyUsername', password='dummyPassword', email='dummy@email.com',
+                   type='company', is_verified=True)
+    db.add(user)
+    company = DbCompanies(id='dummyCompanyId', name='dummyName', user_id=user.id)
+    db.add(company)
+    db.commit()
+
+    return user, company
+
+
+async def create_info() -> DbInfo:
+    info = DbInfo(
+        id='dummyInfoId',
+        description='dummyDescription',
+        location='dummyLocation'
+    )
+    return info
 
 
 def test_create_company_success(client: TestClient, test_db, db, mocker):
@@ -39,7 +59,7 @@ def test_create_company_success(client: TestClient, test_db, db, mocker):
     response = client.post('/companies', json=new_company)
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert data['username'] == 'TestCompany'
     assert data['name'] == 'Test Company'
 
@@ -109,3 +129,142 @@ def test_get_companies_success(client: TestClient, test_db, db, mocker):
 
     assert response.status_code == 200
     assert len(data) == 2
+
+
+@pytest.mark.asyncio
+async def test_get_company_by_id(client: TestClient, test_db, db, mocker):
+    user, company = await fill_test_db(db)
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.get(f'/companies/{company.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 200
+    assert response.json().get('name') == company.name
+
+    # Test with company that does not exist
+
+    response = client.get(f'/companies/dummyNonexistentCompany', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 404
+
+
+
+@pytest.mark.asyncio
+async def test_update_company(client: TestClient, test_db, db, mocker):
+    user, company = await fill_test_db(db)
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.patch(f'/companies/',
+                            headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 200
+    assert response.json().get('name') == company.name
+
+    # Test with unverified user
+    user.is_verified = False
+    db.commit()
+
+    response = client.patch(f'/companies/',
+                            headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_company(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.delete(f'/companies/{company.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 204
+    assert db.query(DbCompanies).all() == []
+
+
+@pytest.mark.asyncio
+async def test_create_company_info(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    schema = {
+        'description': 'dummyDescription',
+        'location': 'dummyLocation'
+    }
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.post('/companies/info', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                           json=schema)
+
+    assert response.status_code == 201
+    assert response.json().get('description') == 'dummyDescription'
+
+    # Testing with unverified user
+    user.is_verified = False
+    db.commit()
+
+    response = client.post('/companies/info', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                           json=schema)
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_company_info(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    info = await create_info()
+    company.info_id = info.id
+    db.add(info)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.get('/companies/info/', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 200
+    assert response.json().get('description') == info.description
+
+    # Testing with unverified user
+    user.is_verified = False
+    db.commit()
+
+    response = client.get('/companies/info/', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_info(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    info = await create_info()
+    company.info_id = info.id
+    db.add(info)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.patch('/companies/info', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                            params={'description': 'newDescription'})
+
+    assert response.status_code == 200
+    assert response.json().get('description') == 'newDescription'
+    assert response.json().get('location') == info.location
+
+    # Testing with unverified user
+    user.is_verified = False
+    db.commit()
+
+    response = client.patch('/companies/info', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                            params={'description': 'newDescription'})
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_info(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    info = await create_info()
+    company.info_id = info.id
+    db.add(info)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.delete(f'/companies/info/{info.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 204
+    assert db.query(DbInfo).all() == []

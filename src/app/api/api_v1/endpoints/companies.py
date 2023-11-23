@@ -13,7 +13,7 @@ from app.schemas import company
 router = APIRouter(tags=['company'])
 
 
-@router.post('/companies', response_model=company.CompanyCreateDisplay)
+@router.post('/companies', response_model=company.CompanyCreateDisplay, status_code=status.HTTP_201_CREATED)
 async def create_company(schema: company.CompanyCreate, db: Annotated[Session, Depends(get_db)]):
     return await create_user(db, schema)
 
@@ -62,7 +62,8 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
     return await CRUDCompany.delete_by_id(db, company_id, current_user)
 
 
-@router.post('/companies/info', response_model=company.CompanyInfoCreateDisplay)
+@router.post('/companies/info', response_model=company.CompanyInfoCreateDisplay,
+             status_code=status.HTTP_201_CREATED)
 async def create_company_info(db: Annotated[Session, Depends(get_db)],
                               current_user: Annotated[DbUsers, Depends(get_current_user)],
                               schema: company.CompanyInfoCreate
