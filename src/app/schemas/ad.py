@@ -23,10 +23,9 @@ class AdDisplay(Ad):
     skills: List[AdSkills]
 
 
-class IncludeSkillToAdd(BaseModel):
+class SkillToAd(BaseModel):
     ad_id: str
     skill_id: str
-    level: str
 
 
 class IncludeSkillToAddDisplay(BaseModel):
