@@ -1,46 +1,40 @@
-import jwt
 import pytest
 
 from fastapi import HTTPException
-from app.core.security import SECRET_KEY
 from app.crud import crud_professional
 
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
 
-@pytest.mark.asyncio
-async def test_edit_info_success(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
-    info = DbInfo(id='test-info-id', description='test-description', location='Test Location', picture=None, main_ad=None)
-    db.add(info)
-
-    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
-
-    result = await crud_professional.edit_info(db, user, first_name='Changed', last_name='Changed', location='Changed')
-
-    assert result == {"message": "Update successful"}
-
-    assert professional.first_name == 'Changed'
-    assert professional.last_name == 'Changed'
-    assert professional.info.location == 'Changed'
-
-
-@pytest.mark.asyncio
-async def test_create_professional_info_success(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
+@pytest.fixture
+def  filling_test_db(db, test_db):
+    user = DbUsers(id='test-id-one', username='User3', password='password123', email='test3@example.com', type='professional', is_verified = 1)
     db.add(user)
 
     professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
     db.add(professional)
 
     db.commit()
+    return user, professional
+    
 
+@pytest.mark.asyncio
+async def test_edit_info_success(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+
+    result = await crud_professional.edit_info(db, user, first_name='Changed', last_name='Changed', location='Changed')
+
+    assert result == {"message": "Update successful"}
+    assert professional.first_name == 'Changed'
+    assert professional.last_name == 'Changed'
+    assert professional.info.location == 'Changed'
+
+
+@pytest.mark.asyncio
+async def test_create_professional_info_success(db, test_db, filling_test_db):
+    _, professional = filling_test_db
     summary = 'Test summary'
     location = 'Test location'
 
@@ -51,34 +45,22 @@ async def test_create_professional_info_success(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_create_professional_info_error400(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
-    db.commit()
-
+async def test_create_professional_info_error400(db, test_db, filling_test_db):
+    _, professional = filling_test_db
+    
     with pytest.raises(HTTPException) as exception:
         await crud_professional.create_professional_info(db, professional, None, None)
+
     assert exception.value.status_code == 400
     assert exception.value.detail == "Fields should be valid: 'summary' and 'location'!"
     
 
 @pytest.mark.asyncio
-async def test_get_info_success(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_get_info_success(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test Location', picture=None, main_ad=None)
     db.add(info)
-
     db.commit()
-    
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     mocker.patch('app.crud.crud_professional.get_resumes', return_value=[])
 
@@ -89,30 +71,20 @@ async def test_get_info_success(db, mocker, test_db):
     
 
 @pytest.mark.asyncio
-async def test_get_info_error404(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id=None)
-    db.add(professional)
-
-    db.commit()
+async def test_get_info_error404(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     with pytest.raises(HTTPException) as exception:
         await crud_professional.get_info(db, user)
+
     assert exception.value.status_code == 404
     assert exception.value.detail == 'Please edit your personal information.'
 
 
 @pytest.mark.asyncio
-async def test_get_resumes(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_get_resumes(db, test_db, filling_test_db):
+    _, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
 
@@ -133,15 +105,8 @@ async def test_get_resumes(db, test_db):
     
 
 @pytest.mark.asyncio
-async def test_change_status(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
-    db.commit()
-
+async def test_change_status(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     status = 'busy'
 
@@ -152,14 +117,8 @@ async def test_change_status(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_get_professional_success(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
-    db.commit()
+async def test_get_professional_success(db, test_db, filling_test_db):
+    user, _ = filling_test_db
 
     result = await crud_professional.get_professional(db, user)
 
@@ -179,19 +138,15 @@ async def test_get_professional_error404(db, test_db):
 
     with pytest.raises(HTTPException) as exception:
         await crud_professional.get_professional(db, user)
+
     assert exception.value.status_code == 404
     assert exception.value.detail == 'You are not logged as professional'
 
 
     
 @pytest.mark.asyncio
-async def test_delete_resume_by_id_success(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
 
@@ -199,52 +154,40 @@ async def test_delete_resume_by_id_success(db, mocker, test_db):
     db.add(resume_1)
     
     db.commit()
-
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     with pytest.raises(HTTPException) as exception:
         await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
+
     assert exception.value.status_code == 204
     assert exception.value.detail == 'Main resume changed successfully'
 
 
 @pytest.mark.asyncio
-async def test_delete_resume_by_id_error404(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
-    
     db.commit()
-
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     with pytest.raises(HTTPException) as exception:
         await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
+
     assert exception.value.status_code == 404
     assert exception.value.detail == 'Resume not found'
 
 
 @pytest.mark.asyncio
-async def test_setup_main_resume_success(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_setup_main_resume_success(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
-
+    
     resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
     db.add(resume_1)
     
     db.commit()
-
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     result = await crud_professional.setup_main_resume('test-resume-id-1', db, user)
@@ -254,16 +197,10 @@ async def test_setup_main_resume_success(db, mocker, test_db):
 
 
 @pytest.mark.asyncio
-async def test_setup_main_resume_error404(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_setup_main_resume_error404(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
-
     db.commit()
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
@@ -273,9 +210,8 @@ async def test_setup_main_resume_error404(db, mocker, test_db):
     assert info.main_ad == None
 
 
-def test_is_user_verified_success(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
+def test_is_user_verified_success(test_db, filling_test_db):
+    user, _ = filling_test_db
 
     result = crud_professional.is_user_verified(user)
 
@@ -284,7 +220,7 @@ def test_is_user_verified_success(db, test_db):
 
 @pytest.mark.asyncio
 def test_is_user_verified_error403(db, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 0)
+    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 0) # this should not be counted, is_verified == 0
     db.add(user)
 
     with pytest.raises(HTTPException) as exception:
@@ -295,16 +231,10 @@ def test_is_user_verified_error403(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_edit_professional_summary_with_info(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
-    db.add(professional)
-
+async def test_edit_professional_summary_with_info(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-summary', location='Test location', picture=None, main_ad=None)
     db.add(info)
-
     db.commit()
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     summary = 'changed summary'
@@ -355,14 +285,8 @@ async def test_get_all_approved_professionals(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_edit_professional_summary_no_info(db, mocker, test_db):
-    user = DbUsers(id='test-id-one', username='User3', email='test3@example.com', password='password123', type='professional', is_verified = 1)
-    db.add(user)
-
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id=None)
-    db.add(professional)
-
-    db.commit()
+async def test_edit_professional_summary_no_info(db, mocker, test_db, filling_test_db):
+    user, professional = filling_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     summary = 'changed summary'
 
