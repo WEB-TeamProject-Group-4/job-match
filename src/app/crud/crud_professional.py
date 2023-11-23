@@ -65,7 +65,10 @@ async def get_info(db: Session, user: DbUsers):
     
 
 def get_resumes(db: Session, professional: DbProfessionals):
-    resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id).all()
+    try:
+        resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id).all()
+    except AttributeError:
+        return []
     resumes = [
             {
                 "id": resume.id,
@@ -109,6 +112,13 @@ async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
     raise HTTPException(status_code=404, detail="Resume not found")
 
 
+async def delete_professional_by_id(db: Session, professional_id: str) -> None:
+    professional = db.query(DbProfessionals).filter(DbProfessionals.id == professional_id).first()
+    db.delete(professional)
+    db.commit()
+    return
+
+
 async def setup_main_resume(resume_id: str, db: Session, user: DbUsers):
     professional: DbProfessionals = await get_professional(db, user)
     resume = db.query(DbAds).filter(DbAds.id == resume_id).first()
@@ -125,7 +135,11 @@ def is_user_verified(user: Annotated[DbUsers, Depends(get_current_user)]) -> Opt
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Please verify your account.'
+            detail='Please verify your account'
+        )
+    if not user.type == 'professional':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN
         )
     return user
 
@@ -167,6 +181,9 @@ async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
     
     
     return {'message': 'Your summary has been updated successfully'}
+
+
+
     
 
 
