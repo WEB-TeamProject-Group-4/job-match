@@ -24,6 +24,8 @@ def  filling_info_test_db(db, test_db):
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
     db.commit()
+
+    return info
     
 
 @pytest.fixture
@@ -161,12 +163,8 @@ async def test_get_professional_error404(db, test_db):
 
     
 @pytest.mark.asyncio
-async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
+async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
     user, professional = filling_test_db
-    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
-    db.add(resume_1)
-    
-    db.commit()
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     with pytest.raises(HTTPException) as exception:
@@ -189,15 +187,9 @@ async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db
 
 
 @pytest.mark.asyncio
-async def test_setup_main_resume_success(db, mocker, test_db, filling_test_db):
+async def test_setup_main_resume_success(db, mocker, test_db, filling_test_db, filling_info_test_db , filling_resume_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-    
-    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
-    db.add(resume_1)
-    
-    db.commit()
+    info = filling_info_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     result = await crud_professional.setup_main_resume('test-resume-id-1', db, user)
@@ -207,11 +199,9 @@ async def test_setup_main_resume_success(db, mocker, test_db, filling_test_db):
 
 
 @pytest.mark.asyncio
-async def test_setup_main_resume_error404(db, mocker, test_db, filling_test_db):
+async def test_setup_main_resume_error404(db, mocker, test_db, filling_test_db, filling_info_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-    db.commit()
+    info = filling_info_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     result = await crud_professional.setup_main_resume('test-resume-id-1', db, user)
@@ -250,11 +240,9 @@ def test_is_user_verified_error403(db, test_db):
 
 
 @pytest.mark.asyncio
-async def test_edit_professional_summary_with_info(db, mocker, test_db, filling_test_db):
+async def test_edit_professional_summary_with_info(db, mocker, test_db, filling_test_db, filling_info_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-summary', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-    db.commit()
+    info = filling_info_test_db
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     summary = 'changed summary'
 
