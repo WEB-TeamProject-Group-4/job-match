@@ -231,49 +231,6 @@ async def test_edit_professional_info_success(client: TestClient, test_db, db, m
     assert 'Changed location' == changed_location.location
 
 
-# @pytest.mark.asyncio
-# async def test_edit_professional_info_error404(client: TestClient, test_db):
-#     response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Changed Location'})
-#     data = response.json()
-
-#     assert response.status_code == 404
-#     assert data['detail'] == "User with username TestUser not found!"
-
-
-# @pytest.mark.asyncio
-# async def test_edit_professional_info_error403(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 0}  # this user is not verified, is_verified == 0
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-
-#     response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Changed Location'})
-#     data = response.json()
-
-#     assert response.status_code == 403
-#     assert data['detail'] == 'Please verify your account.'
-
-
-# @pytest.mark.asyncio
-# async def test_edit_professional_info_error422(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 1} 
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-
-#     response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}) #location not given as a query
-#     data = response.json()
-
-#     assert response.status_code == 422
-#     assert data['detail'][0]['loc'] == ['query', 'location']
-
-
 @pytest.mark.asyncio
 async def test_edit_summary_success(client: TestClient, test_db, db, mocker):
     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
@@ -304,49 +261,6 @@ async def test_edit_summary_success(client: TestClient, test_db, db, mocker):
 
     assert 'Changed summary' == changed_summary.description
 
-    
-# @pytest.mark.asyncio
-# async def test_edit_summary_error404(client: TestClient, test_db, db, mocker):
-#     response = client.patch('/professionals/summary', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'summary': 'Test Location'})
-#     data = response.json()
-
-#     assert response.status_code == 404
-#     assert data['detail'] == "User with username TestUser not found!"
-
-
-# @pytest.mark.asyncio
-# async def test_edit_summary_error403(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 0}  # this user is not verified, is_verified == 0
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    
-#     response = client.patch('/professionals/summary', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'summary': 'Test Location'})
-#     data = response.json()
-
-#     assert response.status_code == 403
-#     assert data['detail'] == "Please verify your account."
-
-
-# @pytest.mark.asyncio
-# async def test_edit_summary_error422(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 1} 
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    
-#     response = client.patch('/professionals/summary', headers={"Authorization": f"Bearer {get_valid_token()}"}) # summary  not given as a query
-#     data = response.json()
-
-#     assert response.status_code == 422
-#     assert data['detail'][0]['loc'] == ['query', 'summary']
-
 
 @pytest.mark.asyncio
 async def test_change_professional_status_success(client: TestClient, test_db, db, mocker):
@@ -371,50 +285,6 @@ async def test_change_professional_status_success(client: TestClient, test_db, d
     changed_status = professional.status
 
     assert 'busy' == changed_status
-
-   
-# @pytest.mark.asyncio
-# async def test_change_professional_status_error404(client: TestClient, test_db):
-#     response = client.patch('/professionals/status', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'status': 'busy'})
-#     data = response.json()
-
-#     assert response.status_code == 404
-#     assert data['detail'] == "User with username TestUser not found!"
-
-
-
-# @pytest.mark.asyncio
-# async def test_change_professional_status_error403(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 0}  # this user is not verified, is_verified == 0
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    
-#     response = client.patch('/professionals/status', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'status': 'busy'})
-#     data = response.json()
-
-#     assert response.status_code == 403
-#     assert data['detail'] == "Please verify your account."
-
-
-# @pytest.mark.asyncio
-# async def test_change_professional_status_error422(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 1} 
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    
-#     response = client.patch('/professionals/status', headers={"Authorization": f"Bearer {get_valid_token()}"}) # status not given as a query
-#     data = response.json()
-
-#     assert response.status_code == 422
-#     assert data['detail'][0]['loc'] == ['query', 'status']
 
 
 @pytest.mark.asyncio
@@ -450,34 +320,6 @@ async def test_set_main_resume_success(client: TestClient, test_db, db, mocker):
     changed_summary: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
 
     assert 'test-resume-id-1' == changed_summary.main_ad
-
-
-# @pytest.mark.asyncio
-# async def test_set_main_resume_error404(client: TestClient, test_db, db, mocker):
-#     resume_id = 'test-resume-id-1'
-#     response = client.patch(f'/professionals/resume/{resume_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
-#     data = response.json()
-
-#     assert response.status_code == 404
-#     assert data['detail'] == "User with username TestUser not found!"
-
-
-# @pytest.mark.asyncio
-# async def test_set_main_resume_error403(client: TestClient, test_db, db, mocker):
-#     user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-#                 'type': 'professional', 'is_verified': 0}  # this user is not verified, is_verified == 0
-    
-#     user = DbUsers(**user_data)
-#     db.add(user)
-
-#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-#     resume_id = 'test-resume-id-1'
-
-#     response = client.patch(f'/professionals/resume/{resume_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
-#     data = response.json()
-
-#     assert response.status_code == 403
-#     assert data['detail'] == "Please verify your account."
 
 
 @pytest.mark.asyncio

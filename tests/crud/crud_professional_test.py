@@ -9,31 +9,6 @@ from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalInfoDisplay
 
 
-def create_user():
-    return DbUsers(
-        id='test-user-id',
-        username="TestUser",
-        password="TestPassword",
-        email="test.email@email.com",
-        type="admin"
-    )
-
-
-def get_valid_token():
-    return jwt.encode({"username": "TestUser"}, SECRET_KEY, algorithm="HS256")
-
-
-def create_professional():
-    return DbProfessionals(
-        id='test-professional-id',
-        first_name='Test',
-        last_name='User',
-        status='active',
-        user_id='test-user-id',
-        info_id='test-info-id'
-
-    )
-
 
 @pytest.mark.asyncio
 async def test_edit_info_success(db, mocker, test_db):
