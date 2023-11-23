@@ -70,18 +70,15 @@ async def test_create_professional_info_error400(db, test_db, filling_test_db):
     
 
 @pytest.mark.asyncio
-async def test_get_info_success(db, mocker, test_db, filling_test_db):
+async def test_get_info_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test Location', picture=None, main_ad=None)
-    db.add(info)
-    db.commit()
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
     mocker.patch('app.crud.crud_professional.get_resumes', return_value=[])
 
     result = await crud_professional.get_info(db, user)
 
     assert result == ProfessionalInfoDisplay(first_name='Prof1', last_name='Last1', summary='test-description', 
-        location='Test Location', status='active', picture=None, active_resumes=0)
+        location='Test location', status='active', picture=None, active_resumes=0)
     
 
 @pytest.mark.asyncio
@@ -97,11 +94,8 @@ async def test_get_info_error404(db, mocker, test_db, filling_test_db):
 
 
 @pytest.mark.asyncio
-async def test_get_resumes_success(db, test_db, filling_test_db):
+async def test_get_resumes_success(db, test_db, filling_test_db, filling_info_test_db):
     _, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-
     resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
     db.add(resume_1)
 
@@ -167,11 +161,8 @@ async def test_get_professional_error404(db, test_db):
 
     
 @pytest.mark.asyncio
-async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db):
+async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-
     resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
     db.add(resume_1)
     
@@ -186,11 +177,8 @@ async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db)
 
 
 @pytest.mark.asyncio
-async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db):
+async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db, filling_info_test_db):
     user, professional = filling_test_db
-    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
-    db.add(info)
-    db.commit()
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
     with pytest.raises(HTTPException) as exception:
