@@ -253,7 +253,7 @@ async def test_edit_professional_summary_with_info(db, mocker, test_db, filling_
 
 
 @pytest.mark.asyncio
-async def test_get_all_approved_professionals(db, test_db):
+async def test_get_all_approved_professionals(db, test_db, filling_info_test_db):
     user_data_list = [
         {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
          'type': 'admin', 'is_verified': 0},  # this should not be counted, is_verified == 0
@@ -278,9 +278,6 @@ async def test_get_all_approved_professionals(db, test_db):
     for professional_data in professional_data_list:
         professional = DbProfessionals(**professional_data)
         db.add(professional)
-
-    info = DbInfo(id='test-info-id', description='test-summary', location='Test location', picture=None, main_ad=None)
-    db.add(info)
 
     db.commit()
     first_name, last_name, status, location, page, page_items = 'Prof2', 'Last2', 'busy', 'Test location', None, None
