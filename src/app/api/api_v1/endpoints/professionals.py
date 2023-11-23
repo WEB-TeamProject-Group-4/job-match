@@ -24,7 +24,7 @@ async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
 
 @router.get('/professionals', response_model=List[ProfessionalDisplay])
 async def get_professionals(db: Annotated[Session, Depends(get_db)],
-                      verified_user: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
+                      _: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
                       search_by_first_name: Annotated[str, Query(description='Optional first name search parameter')] = None,
                       search_by_last_name: Annotated[str, Query(description='Optional last name search parameter')] = None,
                       search_by_status: Annotated[ProfessionalStatus, Query(description='Optional status search parameter')] = None,
@@ -83,4 +83,11 @@ async def delete_professional_resume(db: Annotated[Session, Depends(get_db)],
                                verified_user: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
                                resume_id: Annotated[str, Path(description='Optional resume id update parameter')]):
     return await crud_professional.delete_resume_by_id(db, verified_user, resume_id)
+
+
+@router.delete('/professionals/{professional_id}', status_code=204)
+async def delete_professional_profile(db: Annotated[Session, Depends(get_db)],
+                               _: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
+                               professional_id: Annotated[str, Path(description='Optional resume id update parameter')]):
+    return await crud_professional.delete_professional_by_id(db, professional_id)
 
