@@ -182,6 +182,7 @@ async def test_get_professional_error404(db, test_db):
     assert exception.value.status_code == 404
     assert exception.value.detail == 'You are not logged as professional'
 
+
     
 @pytest.mark.asyncio
 async def test_delete_resume_by_id_success(db, mocker, test_db):
