@@ -9,11 +9,7 @@ from app.schemas.professional import ProfessionalCreateDisplay
 
 
 def create_user():
-    return DbUsers(
-        username='TestUser',
-        password='TestPassword',
-        email='test.email@email.com',
-        type='professional',
+    return DbUsers(username='TestUser', password='TestPassword', email='test.email@email.com', type='professional',
         is_verified=1
     )
 
@@ -24,6 +20,35 @@ def get_valid_token():
 
 def create_professional() -> ProfessionalCreateDisplay:
     return ProfessionalCreateDisplay(username='TestUser', first_name='Professional', last_name='Lastname')
+
+
+@pytest.fixture
+def fill_test_db(test_db, db):
+    user = DbUsers(id='test-id-one', username='User3', password='password123', email='test3@example.com', type='professional', is_verified = 1)
+    db.add(user) 
+    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
+    db.add(professional)
+    db.commit()
+
+    return user, professional
+
+
+@pytest.fixture
+def fill_info_test_db(test_db, db):
+    info = DbInfo(id='test-info-id', description='test-description', location='Test Location', picture=None, main_ad=None)
+    db.add(info)
+    db.commit()
+
+    return info
+
+
+@pytest.fixture
+def fill_resume_test_db(test_db, db):
+    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
+    db.add(resume_1)
+    db.commit()
+
+    return resume_1
 
 
 def test_create_professional_success(client: TestClient, test_db, mocker):
@@ -120,25 +145,9 @@ def test_get_professionals_success(client: TestClient, test_db, db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_all_resumes(client: TestClient, test_db, db, mocker):
+async def test_get_all_resumes(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
     mocker.patch('app.core.auth.get_user_by_username')
-    user_data = {'id': 'test-id-one',
-                "username": "User3",
-                "email": "test3@example.com",
-                "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test Location'}
-    info = DbInfo(**info_data)
-    db.add(info)
-
+    user, _ = fill_test_db
     ad_data_list = [
         {'id': 'test-id-1', 'description': 'resume description-1', 'location': 'Test Location', 'status': 'test-status', 'min_salary': 1000, 'max_salary': 2000, 'info_id': 'test-info-id'},
         {'id': 'test-id-2', 'description': 'resume description-2', 'location': 'Test Location', 'status': 'test-status', 'min_salary': 1000, 'max_salary': 2000, 'info_id': 'test-info-id'},
@@ -165,24 +174,9 @@ async def test_get_all_resumes(client: TestClient, test_db, db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_professional_info(client: TestClient, test_db, db, mocker):
+async def test_get_professional_info(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
     mocker.patch('app.core.auth.get_user_by_username')
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test Location'}
-    info = DbInfo(**info_data)
-    db.add(info)
-
-    db.commit()
-
+    user, _ = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_resumes')
 
@@ -202,85 +196,46 @@ async def test_get_professional_info(client: TestClient, test_db, db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_edit_professional_info_success(client: TestClient, test_db, db, mocker):
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test location'}
-    info = DbInfo(**info_data)
-    db.add(info)
-    
-    db.commit()
-
+async def test_edit_professional_info_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
+    user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
 
     response = client.post('/professionals/info', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'location': 'Changed Location'})
-    data = response.json()
+
 
     assert response.status_code == 201
     changed_location: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
 
-    assert 'Changed location' == changed_location.location
+    assert changed_location.location == 'Changed location'
 
 
 @pytest.mark.asyncio
-async def test_edit_summary_success(client: TestClient, test_db, db, mocker):
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test summary'}
-    info = DbInfo(**info_data)
-    db.add(info)
-    
-    db.commit()
-
+async def test_edit_summary_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
+    user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
 
     response = client.patch('/professionals/summary', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'summary': 'Changed summary'})
-    data = response.json()
+
 
     assert response.status_code == 200
     changed_summary: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
 
-    assert 'Changed summary' == changed_summary.description
+    assert changed_summary.description == 'Changed summary'
 
 
 @pytest.mark.asyncio
-async def test_change_professional_status_success(client: TestClient, test_db, db, mocker):
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
+async def test_change_professional_status_success(client: TestClient, test_db, db, mocker, fill_test_db):
+    user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
 
     response = client.patch('/professionals/status', headers={"Authorization": f"Bearer {get_valid_token()}"}, params={'status': 'busy'})
-    data = response.json()
+
 
     assert response.status_code == 200
     changed_status = professional.status
@@ -289,33 +244,14 @@ async def test_change_professional_status_success(client: TestClient, test_db, d
 
 
 @pytest.mark.asyncio
-async def test_set_main_resume_success(client: TestClient, test_db, db, mocker):
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test summary', 'picture': None, 'main_ad': None}
-    info = DbInfo(**info_data)
-    db.add(info)
-
-    resume_data = {'id': 'test-resume-id-1', 'description': 'resume description-1', 'location': 'Test Location', 'status': 'test-status', 'min_salary': 1000, 'max_salary': 2000, 'info_id': 'test-info-id'}
-    resume = DbAds(**resume_data)
-    db.add(resume)
-
-    db.commit()
-
+async def test_set_main_resume_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
+    user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
 
     response = client.patch('/professionals/resume/test-resume-id-1', headers={"Authorization": f"Bearer {get_valid_token()}"})
-    data = response.json()
+
 
     assert response.status_code == 200
     changed_summary: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
@@ -324,30 +260,10 @@ async def test_set_main_resume_success(client: TestClient, test_db, db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_delete_professional_resume_success(client: TestClient, test_db, db, mocker):
-    user_data = {'id': 'test-id-one', "username": "User3", "email": "test3@example.com", "password": "password123",
-                'type': 'professional', 'is_verified': 1}
-    
-    user = DbUsers(**user_data)
-    db.add(user)
-
-    professional_data = {'id': 'professional-id-one', 'first_name': 'Prof1', 'last_name': 'Last1', 'status':'active', 'user_id': 'test-id-one', 'info_id': "test-info-id"}
-    professional = DbProfessionals(**professional_data)
-    db.add(professional)
-
-    info_data = {'id': 'test-info-id', 'description': 'test-description', 'location': 'Test summary', 'picture': None, 'main_ad': None}
-    info = DbInfo(**info_data)
-    db.add(info)
-
-    resume_data = {'id': 'test-resume-id-1', 'description': 'resume description-1', 'location': 'Test Location', 'status': 'test-status', 'min_salary': 1000, 'max_salary': 2000, 'info_id': 'test-info-id'}
-    resume = DbAds(**resume_data)
-    db.add(resume)
-
-    db.commit()
-
+async def test_delete_professional_resume_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
+    user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
-
     resume_id = 'test-resume-id-1'
 
     response = client.delete(f'/professionals/resume/{resume_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
@@ -358,6 +274,25 @@ async def test_delete_professional_resume_success(client: TestClient, test_db, d
     assert deleted_resume == None
 
 
+@pytest.mark.asyncio
+async def test_delete_professional_profile(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
+    user, professional = fill_test_db
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+    profile_id = 'professional-id-one'
+    
+    response = client.delete(f'/professionals/{profile_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    
+    assert response.status_code == 204
+    deleted_user: DbUsers = (db.query(DbUsers).filter(DbUsers.id == 'test-id-one').first())
+    deleted_professional: DbProfessionals = (db.query(DbProfessionals).filter(DbProfessionals.id == 'professional-id-one').first())
+    deleted_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+    deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
+
+    assert deleted_user == None
+    assert deleted_professional == None
+    assert deleted_info == None
+    assert deleted_resume == None
 
     
 

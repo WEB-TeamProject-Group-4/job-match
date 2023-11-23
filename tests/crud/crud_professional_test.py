@@ -17,7 +17,21 @@ def  filling_test_db(db, test_db):
 
     db.commit()
     return user, professional
+
+
+@pytest.fixture
+def  filling_info_test_db(db, test_db):
+    info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
+    db.add(info)
+    db.commit()
     
+
+@pytest.fixture
+def  filling_resume_test_db(db, test_db):
+    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
+    db.add(resume_1)
+    db.commit()
+
 
 @pytest.mark.asyncio
 async def test_edit_info_success(db, mocker, test_db, filling_test_db):
@@ -83,7 +97,7 @@ async def test_get_info_error404(db, mocker, test_db, filling_test_db):
 
 
 @pytest.mark.asyncio
-async def test_get_resumes(db, test_db, filling_test_db):
+async def test_get_resumes_success(db, test_db, filling_test_db):
     _, professional = filling_test_db
     info = DbInfo(id='test-info-id', description='test-description', location='Test location', picture=None, main_ad=None)
     db.add(info)
@@ -103,6 +117,15 @@ async def test_get_resumes(db, test_db, filling_test_db):
         {'id': 'test-resume-id-2', 'description': 'test-resume-description-2', 'location': 'Test Second Location', 'status': 'active', 'min_salary': 1000, 'max_salary': 2000}
         ]
     
+
+@pytest.mark.asyncio
+async def test_get_resumes_noInfo(db, test_db, filling_test_db):
+    _, professional = filling_test_db # no info for the professional
+
+    result = crud_professional.get_resumes(db, professional)
+
+    assert result == []
+
 
 @pytest.mark.asyncio
 async def test_change_status(db, mocker, test_db, filling_test_db):
@@ -141,7 +164,6 @@ async def test_get_professional_error404(db, test_db):
 
     assert exception.value.status_code == 404
     assert exception.value.detail == 'You are not logged as professional'
-
 
     
 @pytest.mark.asyncio
@@ -292,7 +314,6 @@ async def test_get_all_approved_professionals(db, test_db):
     assert len(result) == 1
 
 
-
 @pytest.mark.asyncio
 async def test_edit_professional_summary_no_info(db, mocker, test_db, filling_test_db):
     user, professional = filling_test_db
@@ -305,6 +326,26 @@ async def test_edit_professional_summary_no_info(db, mocker, test_db, filling_te
     assert professional.info_id is not None
 
 
+@pytest.mark.asyncio
+async def test_delete_profile(db, mocker, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
+    _, professional = filling_test_db
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+    professional_id = 'professional-id-one'
+
+    await crud_professional.delete_professional_by_id(db, professional_id)
+    deleted_user: DbUsers = (db.query(DbUsers).filter(DbUsers.id == 'test-id-one').first())
+    deleted_professional: DbProfessionals = (db.query(DbProfessionals).filter(DbProfessionals.id == 'professional-id-one').first())
+    deleted_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+    deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
+    
+    assert deleted_user == None
+    assert deleted_professional == None
+    assert deleted_info == None
+    assert deleted_resume == None
+
+
+
+   
 
 
 
