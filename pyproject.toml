@@ -17,3 +17,8 @@ Github = 'https://github.com/WEB-TeamProject-Group-4/job-match'
 pythonpath = [
   "src"
 ]
+
+[tool.coverage.run]
+omit = [
+    'run_server.py'
+]
