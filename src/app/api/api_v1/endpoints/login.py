@@ -13,7 +13,8 @@ router = APIRouter()
 @router.post('/login', include_in_schema=False)
 async def login(schema: Annotated[OAuth2PasswordRequestForm, Depends()],
                 db: Annotated[Session, Depends(get_db)]):
-    user = db.query(DbUsers).filter(DbUsers.username == schema.username).first()
+    user = db.query(DbUsers).filter(DbUsers.username == schema.username,
+                                    DbUsers.is_deleted is False).first()
     if not user:
         raise HTTPException(
             status_code=401,

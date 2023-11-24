@@ -9,7 +9,7 @@ import jwt
 
 
 def get_user_by_username(db: Session, username: str):
-    user = db.query(DbUsers).filter(DbUsers.username == username).first()
+    user = db.query(DbUsers).filter(DbUsers.username == username, DbUsers.is_deleted is False).first()
     if not user:
         raise HTTPException(
             status_code=404,
