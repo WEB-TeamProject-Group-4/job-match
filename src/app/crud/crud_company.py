@@ -14,7 +14,7 @@ InfoModel = TypeVar('InfoModel', bound=Union[DbInfo, Type[DbInfo]])
 class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
     @staticmethod
     async def get_multi(db: Session, name: str | None, page: int) -> list[CompanyModelType]:
-        queries = [DbUsers.is_verified == 1, DbUsers.is_deleted == False]
+        queries = [DbUsers.is_verified == True, DbUsers.is_deleted == False]
         if name:
             search = "%{}%".format(name)
             queries.append(DbCompanies.name.like(search))
