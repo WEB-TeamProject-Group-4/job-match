@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY, LargeBinary
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -67,7 +67,7 @@ class DbInfo(Base):
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
     description = Column(String(45), nullable=True)
     location = Column(String(45), nullable=True)
-    picture = Column(BINARY, nullable=True, default=None)
+    picture = Column(LargeBinary, nullable=True, default=None)
     main_ad = Column(String(50), nullable=True, default=None)
     is_deleted = Column(Boolean, default=False)
     company = relationship('DbCompanies', back_populates='info', cascade='all, delete-orphan')
