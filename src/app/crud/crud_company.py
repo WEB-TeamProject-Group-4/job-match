@@ -14,7 +14,7 @@ InfoModel = TypeVar('InfoModel', bound=Union[DbInfo, Type[DbInfo]])
 class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
     @staticmethod
     async def get_multi(db: Session, name: str | None, page: int) -> list[CompanyModelType]:
-        queries = [DbUsers.is_verified == 1]
+        queries = [DbUsers.is_verified == 1, DbUsers.is_deleted == False]
         if name:
             search = "%{}%".format(name)
             queries.append(DbCompanies.name.like(search))
@@ -25,12 +25,14 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
 
     @staticmethod
     async def get_by_id(db: Session, company_id: str) -> CompanyModelType:
-        company = db.query(DbCompanies).filter(DbCompanies.id == company_id).first()
+        company = db.query(DbCompanies).filter(DbCompanies.id == company_id,
+                                               DbCompanies.is_deleted == False).first()
         return company
 
     @staticmethod
     async def update(db: Session, name: str | None, contact: str | None, user_id: str) -> CompanyModelType:
-        company = db.query(DbCompanies).filter(DbCompanies.user_id == user_id).first()
+        company = db.query(DbCompanies).filter(DbCompanies.user_id == user_id,
+                                               DbCompanies.is_deleted == False).first()
         if name:
             company.name = name
         if contact:
@@ -41,14 +43,15 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
 
     @staticmethod
     async def delete_by_id(db: Session, company_id: str, user: UserModelType) -> None:
-        company = db.query(DbCompanies).filter(DbCompanies.id == company_id).first()
+        company: CompanyModelType = db.query(DbCompanies).filter(DbCompanies.id == company_id,
+                                                                 DbCompanies.is_deleted == False).first()
         if not await is_admin(user) and not await is_owner(company, user.id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='Deletion of the company is restricted to administrators or the company owner.'
             )
         else:
-            db.delete(company)
+            company.is_deleted = True
             db.commit()
             return
 
@@ -65,9 +68,9 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
 
     @staticmethod
     async def get_info_by_id(db: Session, info_id: str, company_id: str) -> CompanyInfoDisplay:
-        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        info = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
         active_job_ads = db.query(DbAds).filter(DbAds.info_id == info_id,
-                                                DbAds.status == 'active').count()
+                                                DbAds.status == 'active',).count()
         number_of_matches = db.query(DbJobsMatches).filter(DbJobsMatches.company_id == company_id).count()
 
         return CompanyInfoDisplay(**info.__dict__, active_job_ads=active_job_ads,
@@ -75,7 +78,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
 
     @staticmethod
     async def update_info(db: Session, info_id: str, description: str | None, location: str | None) -> InfoModel:
-        info = db.query(DbInfo).filter(DbInfo.id == info_id).first()
+        info = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
         if description:
             info.description = description
         if location:

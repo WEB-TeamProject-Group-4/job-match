@@ -108,7 +108,7 @@ async def test_delete_by_id(db, test_db, mocker):
 
     await CRUDCompany.delete_by_id(db, 'dummyCompanyId', user)
 
-    assert db.query(DbCompanies).all() == []
+    assert company.is_deleted == True
 
 
 @pytest.mark.asyncio

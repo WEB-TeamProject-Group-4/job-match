@@ -143,10 +143,10 @@ async def test_get_company_by_id(client: TestClient, test_db, db, mocker):
 
     # Test with company that does not exist
 
-    response = client.get(f'/companies/dummyNonexistentCompany', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    response = client.get(f'/companies/dummyNonexistentCompany',
+                          headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 404
-
 
 
 @pytest.mark.asyncio
@@ -178,7 +178,6 @@ async def test_delete_company(client: TestClient, db, test_db, mocker):
     response = client.delete(f'/companies/{company.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 204
-    assert db.query(DbCompanies).all() == []
 
 
 @pytest.mark.asyncio
