@@ -4,9 +4,21 @@ from typing import List
 from pydantic import BaseModel
 
 
-class AdStatus(str, Enum):
+class AdStatusCreate(str, Enum):
     ACTIVE = 'Active'
     ARCHIVED = 'Archived'
+    HIDDEN = 'Hidden'
+    PRIVATE = 'Private'
+    MATCHED = 'Matched'
+
+
+class JobAdStatus(str, Enum):
+    ACTIVE = 'Active'
+    ARCHIVED = 'Archived'
+
+
+class ResumeStatus(str, Enum):
+    ACTIVE = 'Active'
     HIDDEN = 'Hidden'
     PRIVATE = 'Private'
     MATCHED = 'Matched'
@@ -21,23 +33,19 @@ class SkillLevel(str, Enum):
     MASTER = 'Master'
 
 
-class Ad(BaseModel):
+class AdCreate(BaseModel):
     description: str
     location: str
-    status: AdStatus
+    status: AdStatusCreate
     min_salary: int
     max_salary: int
-
-
-class AdCreate(Ad):
-    info_id: str
 
 
 class AdSkills(BaseModel):
     name: str
 
 
-class AdDisplay(Ad):
+class AdDisplay(AdCreate):
     skills: List[AdSkills]
 
 

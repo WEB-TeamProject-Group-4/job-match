@@ -4,33 +4,62 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models import DbAds, DbSkills, adds_skills
-from app.schemas.ad import AdCreate, AdSkills, IncludeSkillToAddDisplay, AdDisplay, AdStatus, SkillLevel
+from app.db.models import DbAds, DbSkills, adds_skills, DbUsers, DbProfessionals, DbCompanies
+from app.schemas.ad import AdCreate, AdSkills, IncludeSkillToAddDisplay, AdDisplay, JobAdStatus, SkillLevel
 
 
-async def create_ad_crud(db: Session, schema: AdCreate) -> DbAds:
+async def create_ad_crud(db: Session, current_user: DbUsers, schema: AdCreate) -> DbAds:
+    current_user_type: str = current_user.type
+    current_user_id: str = current_user.id
+
+    if current_user_type == 'professional':
+        professional = db.query(DbProfessionals).filter(DbProfessionals.user_id == current_user_id).first()
+        user_info = professional.info_id
+    elif current_user_type == 'company':
+        company = db.query(DbCompanies).filter(DbCompanies.user_id == current_user_id).first()
+        user_info = company.info_id
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_FORBIDDEN,
+            detail='Only professionals and companies can create ads.')
+
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You need to complete your info before creating an ad')
+
+    is_resume = current_user_type == 'professional'
     new_ad = DbAds(
         description=schema.description,
         location=schema.location,
         status=schema.status.value,
         min_salary=schema.min_salary,
         max_salary=schema.max_salary,
-        info_id=schema.info_id
+        info_id=user_info,
+        is_resume=is_resume
     )
     try:
         db.add(new_ad)
         db.commit()
     except IntegrityError as err:
+        db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
     else:
         db.refresh(new_ad)
         return new_ad
 
 
-async def get_ads_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
-                       ad_status: Optional[AdStatus] = None, min_salary: Optional[int] = None,
-                       max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
-    query = db.query(DbAds)
+async def get_job_ads_crud(db: Session, user_type: str, description: Optional[str] = None,
+                           location: Optional[str] = None,
+                           ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                           max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+    if user_type == 'company':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Section not available for company users'
+        )
+
+    query = db.query(DbAds).filter(DbAds.is_resume == 0)
 
     if description:
         keywords = description.split()
@@ -39,7 +68,8 @@ async def get_ads_crud(db: Session, description: Optional[str] = None, location:
     if location:
         query = query.filter(DbAds.location.ilike(f'%{location}%'))
     if ad_status:
-        query = query.filter(DbAds.status == ad_status.value)
+        ad_status_value: str = JobAdStatus.value
+        query = query.filter(DbAds.status == ad_status_value)
     if min_salary:
         query = query.filter(DbAds.min_salary >= min_salary)
     if max_salary:
@@ -56,13 +86,89 @@ async def get_ads_crud(db: Session, description: Optional[str] = None, location:
     return ads
 
 
-async def update_ad_crud(db: Session, ad_id=str, description: Optional[str] = None, location: Optional[str] = None,
-                         ad_status: Optional[AdStatus] = None, min_salary: Optional[int] = None,
-                         max_salary: Optional[int] = None) -> Type[DbAds]:
+async def get_resumes_crud(db: Session, user_type: str, description: Optional[str] = None,
+                           location: Optional[str] = None,
+                           ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                           max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+    if user_type == 'professional':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Section not available for professional users'
+        )
 
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
+    query = db.query(DbAds).filter(DbAds.is_resume == 1)
+
+    if description:
+        keywords = description.split()
+        for keyword in keywords:
+            query = query.filter(DbAds.description.ilike(f'%{keyword}%'))
+    if location:
+        query = query.filter(DbAds.location.ilike(f'%{location}%'))
+    if ad_status:
+        ad_status_value: str = JobAdStatus.value
+        query = query.filter(DbAds.status == ad_status_value)
+    if min_salary:
+        query = query.filter(DbAds.min_salary >= min_salary)
+    if max_salary:
+        query = query.filter(DbAds.max_salary <= max_salary)
+
+    ads = query.limit(2).offset((page - 1) * 2).all()
+
+    if not ads:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="There are no results for your search"
+        )
+
+    return ads
+
+
+async def update_ad_company_crud(db: Session, current_user: DbUsers, ad_id=str,
+                                 description: Optional[str] = None, location: Optional[str] = None,
+                                 ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                                 max_salary: Optional[int] = None) -> Type[DbAds]:
+
+    if current_user.type == 'professional':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Restricted section')
+
+    company = db.query(DbCompanies).filter(DbCompanies.user_id == str(current_user.id)).first()
+    ad = db.query(DbAds).filter(DbAds.id == ad_id, DbAds.is_deleted == 0).first()
     if not ad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
+
+    if company.info_id != ad.info_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only the author can make changes to the ad')
+
+    if description:
+        ad.description = description
+    if location:
+        ad.location = location
+    if ad_status:
+        ad.status = ad_status.value
+    if min_salary:
+        ad.min_salary = min_salary
+    if max_salary:
+        ad.max_salary = max_salary
+    db.commit()
+
+    return ad
+
+
+async def update_ad_professional_crud(db: Session, current_user: DbUsers, ad_id=str,
+                                      description: Optional[str] = None, location: Optional[str] = None,
+                                      ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                                      max_salary: Optional[int] = None) -> Type[DbAds]:
+
+    if current_user.type == 'company':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Restricted section')
+
+    professional = db.query(DbProfessionals).filter(DbProfessionals.user_id == str(current_user.id)).first()
+    ad = db.query(DbAds).filter(DbAds.id == ad_id, DbAds.is_deleted == 0).first()
+    if not ad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
+
+    if professional.info_id != ad.info_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only the author can make changes to the ad')
 
     if description:
         ad.description = description
@@ -231,3 +337,7 @@ async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) ->
     except IntegrityError as err:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
+
+
+async def is_admin(user: DbUsers) -> bool:
+    return user.type == 'admin'
