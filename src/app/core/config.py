@@ -5,7 +5,7 @@ from pydantic import Field
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = 'job-match'
-    DB_URL: str = Field(default='dummy', json_schema_extra={'env': 'DB_URL'})
+    DB_URL: str = Field(default='mysql+pymysql://dummy/job_match_db', json_schema_extra={'env': 'DB_URL'})
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, json_schema_extra={'env': 'ACCESS_TOKEN_EXPIRE_MINUTES'})
     EMAIL_TOKEN_EXPIRE_MINUTES: int = Field(default=30, json_schema_extra={'env': 'EMAIL_TOKEN_EXPIRE_MINUTES'})
     ALGORITHM: str = Field(default='HS256', json_schema_extra={'env': 'ALGORITHM'})
