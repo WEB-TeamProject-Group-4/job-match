@@ -70,7 +70,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
     async def get_info_by_id(db: Session, info_id: str, company_id: str) -> CompanyInfoDisplay:
         info = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
         active_job_ads = db.query(DbAds).filter(DbAds.info_id == info_id,
-                                                DbAds.status == 'active',).count()
+                                                DbAds.status == 'active', ).count()
         number_of_matches = db.query(DbJobsMatches).filter(DbJobsMatches.company_id == company_id).count()
 
         return CompanyInfoDisplay(**info.__dict__, active_job_ads=active_job_ads,
@@ -100,6 +100,13 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
             db.delete(info)
             db.commit()
             return
+
+    @staticmethod
+    async def upload(db: Session, info_id: str, image: bytearray) -> InfoModel:
+        info: InfoModel = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
+        info.picture = image
+        db.commit()
+        return info
 
 
 async def is_admin(user: UserModelType) -> bool:

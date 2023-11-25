@@ -217,3 +217,16 @@ async def test_delete_info(db, test_db, mocker):
     await CRUDCompany.delete_info_by_id(db, info.id, user)
 
     assert db.query(DbInfo).filter(DbInfo.id == info.id).all() == []
+
+
+@pytest.mark.asyncio
+async def test_upload(db, test_db):
+    info = await create_info()
+    db.add(info)
+    db.commit()
+    image = [23, 222, 31]
+
+    result = await CRUDCompany.upload(db, info.id, bytearray(image))
+
+    assert result.id == info.id
+    assert result.picture == bytearray(image)
