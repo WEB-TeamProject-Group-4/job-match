@@ -30,13 +30,7 @@ async def get_companies(db: Annotated[Session, Depends(get_db)],
 @router.get('/companies/{company_id}', response_model=company.CompanyDisplay)
 async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
                             company_id: Annotated[str, Path(description='Mandatory company id path parameter')]):
-    company = await CRUDCompany.get_by_id(db, company_id)
-    if not company:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Company with id {company_id} does not exist.'
-        )
-    return company
+    return await CRUDCompany.get_by_id(db, company_id)
 
 
 @router.patch('/companies', response_model=company.UpdateCompanyDisplay)

@@ -70,6 +70,13 @@ async def test_get_by_id(db, test_db):
     assert result.id == company.id
     assert result.name == company.name
 
+    # Testing with invalid id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.get_by_id(db, 'invalidId')
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_update(db, test_db):
@@ -86,6 +93,17 @@ async def test_update(db, test_db):
     assert result.id == company.id
     assert result.name == new_company_name
     assert result.contacts == new_company_contact
+
+    # Testing with deleted company
+    company.is_deleted = True
+    db.commit()
+
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.update(db, name=new_company_name, contact=new_company_contact,
+                                 user_id=user.id)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -109,6 +127,13 @@ async def test_delete_by_id(db, test_db, mocker):
     await CRUDCompany.delete_by_id(db, 'dummyCompanyId', user)
 
     assert company.is_deleted == True
+
+    # Test with invalid company id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.delete_by_id(db, 'invalidId', user)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -162,6 +187,12 @@ async def test_create_info(db, test_db, mocker):
     assert company.info_id == result.id
     assert result.description == info_schema.description
 
+    # Testing with already existing info
+    mock_update_info = mocker.patch('app.crud.crud_company.CRUDCompany.update_info')
+
+    result = await CRUDCompany.create_info(db, company.id, info_schema)
+    mock_update_info.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_get_info_by_id(db, test_db):
@@ -179,6 +210,13 @@ async def test_get_info_by_id(db, test_db):
     assert result.active_job_ads == 0
     assert result.number_of_matches == 0
 
+    # Test with invalid info id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.get_info_by_id(db, 'invalidId', company.id)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_update_info(db, test_db):
@@ -193,6 +231,13 @@ async def test_update_info(db, test_db):
     assert result.id == info.id
     assert result.description == new_description
     assert result.location == new_location
+
+    # Test with invalid info id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.update_info(db, 'invalidId', new_description, new_location)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -216,7 +261,14 @@ async def test_delete_info(db, test_db, mocker):
     mocker.patch('app.crud.crud_company.is_owner', return_value=True)
     await CRUDCompany.delete_info_by_id(db, info.id, user)
 
-    assert db.query(DbInfo).filter(DbInfo.id == info.id).all() == []
+    assert info.is_deleted == True
+
+    # Test with invalid info id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.delete_info_by_id(db, 'invalidId', user)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -230,3 +282,10 @@ async def test_upload(db, test_db):
 
     assert result.id == info.id
     assert result.picture == bytearray(image)
+
+    # Test with invalid info id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.upload(db, 'invalidId', bytearray(image))
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404

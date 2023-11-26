@@ -1,7 +1,9 @@
 import jwt
 import pytest
-from app.db.models import DbCompanies, DbUsers, DbInfo
+
 from fastapi.testclient import TestClient
+
+from app.db.models import DbCompanies, DbUsers, DbInfo
 from app.core.security import SECRET_KEY
 from app.schemas.company import CompanyCreateDisplay, CompanyInfoCreate
 
@@ -266,7 +268,6 @@ async def test_delete_info(client: TestClient, db, test_db, mocker):
     response = client.delete(f'/companies/info/{info.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 204
-    assert db.query(DbInfo).all() == []
 
 
 @pytest.mark.asyncio
