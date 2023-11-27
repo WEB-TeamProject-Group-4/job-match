@@ -279,20 +279,17 @@ async def test_delete_professional_profile(client: TestClient, test_db, db, mock
     user, professional = fill_test_db
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
-    profile_id = 'professional-id-one'
     
-    response = client.delete(f'/professionals/{profile_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    response = client.delete(f'/professionals/professional-id-one', headers={"Authorization": f"Bearer {get_valid_token()}"})
     
     assert response.status_code == 204
-    deleted_user: DbUsers = (db.query(DbUsers).filter(DbUsers.id == 'test-id-one').first())
     deleted_professional: DbProfessionals = (db.query(DbProfessionals).filter(DbProfessionals.id == 'professional-id-one').first())
     deleted_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
     deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
 
-    assert deleted_user == None
-    assert deleted_professional == None
-    assert deleted_info == None
-    assert deleted_resume == None
+    assert deleted_professional.is_deleted == True
+    assert deleted_info.is_deleted == True
+    assert deleted_resume.is_deleted == True
 
     
 
