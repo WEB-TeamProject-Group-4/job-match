@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models import DbUsers, DbProfessionals, DbCompanies, DbAds, DbSkills, adds_skills
+from app.db.models import DbUsers, DbProfessionals, DbCompanies, DbAds, DbSkills, adds_skills, DbInfo
 from app.schemas.ad import AdCreate, AdSkills, AddSkillToAdDisplay, AdDisplay, ResumeStatus, JobAdStatus, SkillLevel
 
 
@@ -114,6 +114,7 @@ async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None
 
     if professional:
         check_user_authorization(current_user, professional, ad)
+        if_main_resume(db, ad)
     else:
         check_user_authorization(current_user, company, ad)
 
@@ -292,3 +293,10 @@ def get_company(db: Session, current_user: DbUsers) -> CompanyModelType | None:
 def check_user_authorization(user: DbUsers, author: Union[ProfessionalModelType, CompanyModelType], ad: AdModelType):
     if user.type != 'admin' and author.info_id != ad.info_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only the author can apply changes')
+
+
+def if_main_resume(db: Session, ad: AdModelType) -> None:
+    resume = db.query(DbInfo).filter(DbInfo.main_ad == str(ad.id)).first()
+    if resume:
+        resume.main_ad = None
+        return
