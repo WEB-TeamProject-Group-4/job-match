@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional, Type
+from typing import Annotated, Dict, List, Optional, Type, Union
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -13,7 +13,7 @@ DEFAULT_VALUE_ITEMS_PER_PAGE = 10
 
 
 async def edit_info(db: Session, user: DbUsers, first_name: Optional[str], 
-                    last_name: Optional[str], location: str):
+                    last_name: Optional[str], location: str) -> Dict[str, str]:
     
     professional: DbProfessionals = await get_professional(db, user)
    
@@ -33,7 +33,7 @@ async def edit_info(db: Session, user: DbUsers, first_name: Optional[str],
     return {"message": "Update successful"}
 
 
-async def create_professional_info(db: Session, professional: DbProfessionals, summary: str, location: str):
+async def create_professional_info(db: Session, professional: DbProfessionals, summary: str, location: str) -> None:
     if summary and location:
         new_info = DbInfo(description=summary,location=location)
         db.add(new_info)
@@ -47,7 +47,7 @@ async def create_professional_info(db: Session, professional: DbProfessionals, s
          raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Fields should be valid: 'summary' and 'location'!")
     
 
-async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
+async def edit_professional_summary(db: Session, user: DbUsers, summary: str) -> Dict[str, str]:
     professional: DbProfessionals = await get_professional(db, user)
     if professional.info is None:
         new_info = DbInfo(description=summary,location='')
@@ -66,7 +66,7 @@ async def edit_professional_summary(db: Session, user: DbUsers, summary: str):
     return {'message': 'Your summary has been updated successfully'}
 
 
-async def get_info(db: Session, user: DbUsers):
+async def get_info(db: Session, user: DbUsers) -> ProfessionalInfoDisplay:
     professional: DbProfessionals = await get_professional(db, user)
     if professional.info is None or professional.info.is_deleted == True:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Please edit your personal information.')
@@ -84,7 +84,7 @@ async def get_info(db: Session, user: DbUsers):
     )
     
 
-def get_resumes(db: Session, professional: DbProfessionals):
+def get_resumes(db: Session, professional: DbProfessionals)  -> List[Dict[Union[str, int, bool], Optional[str]]]:
     try:
         resumes_db = db.query(DbAds).filter(DbAds.info_id == professional.info.id, DbAds.is_deleted == False).all()
     except AttributeError:
@@ -104,7 +104,7 @@ def get_resumes(db: Session, professional: DbProfessionals):
     return resumes
 
 
-async def change_status(status: str, db: Session, user: DbProfessionals):
+async def change_status(status: str, db: Session, user: DbProfessionals) -> Dict[str, str]:
     professional: DbProfessionals = await get_professional(db, user)
     professional.status = status
     db.commit()
@@ -112,7 +112,7 @@ async def change_status(status: str, db: Session, user: DbProfessionals):
     return {'message': 'Status changed successfully!'}
 
 
-async def get_professional(db: Session, user: DbUsers):
+async def get_professional(db: Session, user: DbUsers) -> DbProfessionals:
     professional = (db.query(DbProfessionals).filter(DbProfessionals.user_id == user.id, DbProfessionals.is_deleted == False).first())
     if not professional:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='You are not logged as professional')
@@ -144,7 +144,7 @@ async def delete_professional_by_id(db: Session, professional_id: str) -> None:
         return
 
 
-async def setup_main_resume(resume_id: str, db: Session, user: DbUsers):
+async def setup_main_resume(resume_id: str, db: Session, user: DbUsers) -> Dict[str, str]:
     professional: DbProfessionals = await get_professional(db, user)
     resume = db.query(DbAds).filter(DbAds.id == resume_id, DbAds.is_deleted == False).first()
     if resume:
