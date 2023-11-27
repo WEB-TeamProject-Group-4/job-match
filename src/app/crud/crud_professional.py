@@ -11,7 +11,7 @@ from app.schemas.professional import ProfessionalInfoDisplay
 
 
 DEFAULT_VALUE_ITEMS_PER_PAGE = 10
-MAX_IMAGE_SIZE_BYTES = 1024 * 1024
+MAX_IMAGE_SIZE_BYTES = 300 * 300
 
 
 async def edit_info(db: Session, user: DbUsers, first_name: Optional[str], 
