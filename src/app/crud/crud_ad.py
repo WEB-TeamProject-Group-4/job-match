@@ -16,7 +16,7 @@ async def create_ad_crud(db: Session, current_user: DbUsers, schema: AdCreate) -
     if not user_info:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='You need to complete your info before creating an ad')
+            detail='Complete your info before creating an ad')
 
     is_resume = current_user.type == 'professional'
     new_ad = DbAds(
@@ -255,7 +255,7 @@ def update_ad(ad: Type[DbAds], description: Optional[str] = None, location: Opti
         ad.max_salary = max_salary
 
 
-def paginate(query, page: int, page_size: int = 2):
+def paginate(query, page: int, page_size: Optional[int] = 3):
     return query.limit(page_size).offset((page - 1) * page_size).all()
 
 
