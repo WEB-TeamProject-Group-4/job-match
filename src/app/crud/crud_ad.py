@@ -1,91 +1,116 @@
-from typing import Type, List, Optional
+from typing import Type, List, Optional, Union
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models import DbAds, DbSkills, adds_skills
-from app.schemas.ad import AdCreate, AdSkills, IncludeSkillToAddDisplay, AdDisplay, AdStatus, SkillLevel
+from app.db.models import DbUsers, DbProfessionals, DbCompanies, DbAds, DbSkills, adds_skills
+from app.schemas.ad import AdCreate, AdSkills, AddSkillToAdDisplay, AdDisplay, ResumeStatus, JobAdStatus, SkillLevel
 
 
-async def create_ad_crud(db: Session, schema: AdCreate) -> DbAds:
+async def create_ad_crud(db: Session, current_user: DbUsers, schema: AdCreate) -> DbAds:
+    professional = get_professional(db, current_user)
+    company = get_company(db, current_user)
+    user_info = professional.info_id if professional else company.info_id if company else None
+
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You need to complete your info before creating an ad')
+
+    is_resume = current_user.type == 'professional'
     new_ad = DbAds(
         description=schema.description,
         location=schema.location,
         status=schema.status.value,
         min_salary=schema.min_salary,
         max_salary=schema.max_salary,
-        info_id=schema.info_id
+        info_id=user_info,
+        is_resume=is_resume
     )
     try:
         db.add(new_ad)
         db.commit()
     except IntegrityError as err:
+        db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
     else:
         db.refresh(new_ad)
         return new_ad
 
 
-async def get_ads_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
-                       ad_status: Optional[AdStatus] = None, min_salary: Optional[int] = None,
-                       max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
-    query = db.query(DbAds)
-
-    if description:
-        keywords = description.split()
-        for keyword in keywords:
-            query = query.filter(DbAds.description.ilike(f'%{keyword}%'))
-    if location:
-        query = query.filter(DbAds.location.ilike(f'%{location}%'))
-    if ad_status:
-        query = query.filter(DbAds.status == ad_status.value)
-    if min_salary:
-        query = query.filter(DbAds.min_salary >= min_salary)
-    if max_salary:
-        query = query.filter(DbAds.max_salary <= max_salary)
-
-    ads = query.limit(2).offset((page - 1) * 2).all()
+async def get_resumes_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
+                           ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                           max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+    query = db.query(DbAds).filter(DbAds.is_resume == 1, DbAds.is_deleted == 0)
+    query = filter_ads(query, description, location, ad_status, min_salary, max_salary)
+    ads = paginate(query, page)
 
     if not ads:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="There are no results for your search"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There are no results for your search")
 
     return ads
 
 
-async def update_ad_crud(db: Session, ad_id=str, description: Optional[str] = None, location: Optional[str] = None,
-                         ad_status: Optional[AdStatus] = None, min_salary: Optional[int] = None,
-                         max_salary: Optional[int] = None) -> Type[DbAds]:
+async def get_job_ads_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
+                           ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                           max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+    query = db.query(DbAds).filter(DbAds.is_resume == 0, DbAds.is_deleted == 0)
+    query = filter_ads(query, description, location, ad_status, min_salary, max_salary)
+    ads = paginate(query, page)
 
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
-    if not ad:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
+    if not ads:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There are no results for your search")
 
-    if description:
-        ad.description = description
-    if location:
-        ad.location = location
-    if ad_status:
-        ad.status = ad_status.value
-    if min_salary:
-        ad.min_salary = min_salary
-    if max_salary:
-        ad.max_salary = max_salary
+    return ads
+
+
+async def update_resumes_crud(db: Session, current_user: DbUsers, ad_id: str,
+                              description: Optional[str] = None, location: Optional[str] = None,
+                              ad_status: Optional[ResumeStatus] = None, min_salary: Optional[int] = None,
+                              max_salary: Optional[int] = None) -> Type[DbAds]:
+
+    ad = get_ad(db, ad_id)
+    if not ad.is_resume:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot update job ads')
+
+    professional = get_professional(db, current_user)
+    check_user_authorization(current_user, professional, ad)
+    update_ad(ad, description, location, ad_status, min_salary, max_salary)
     db.commit()
 
     return ad
 
 
-async def delete_ad_crud(db: Session, ad_id: str) -> None:
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
+async def update_job_ads_crud(db: Session, current_user: DbUsers, ad_id: str,
+                              description: Optional[str] = None, location: Optional[str] = None,
+                              ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                              max_salary: Optional[int] = None) -> Type[DbAds]:
 
-    if not ad:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
+    ad = get_ad(db, ad_id)
+    if ad.is_resume:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot update resumes')
 
-    db.delete(ad)
+    company = get_company(db, current_user)
+    check_user_authorization(current_user, company, ad)
+    update_ad(ad, description, location, ad_status, min_salary, max_salary)
+    db.commit()
+
+    return ad
+
+
+async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None:
+    ad = get_ad(db, ad_id)
+    professional = get_professional(db, current_user)
+    company = get_company(db, current_user)
+
+    if professional:
+        check_user_authorization(current_user, professional, ad)
+    else:
+        check_user_authorization(current_user, company, ad)
+
+    ad.is_deleted = 1
+
     try:
         db.commit()
     except IntegrityError as err:
@@ -94,21 +119,14 @@ async def delete_ad_crud(db: Session, ad_id: str) -> None:
 
 
 async def get_ad_by_id_crud(db: Session, ad_id: str) -> Type[AdDisplay]:
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
-
-    if not ad:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Ad with id {ad_id} does not exist'
-        )
-
+    ad = get_ad(db, ad_id)
     return ad
 
 
 async def create_new_skill(db: Session, schema: AdSkills) -> DbSkills:
-    new_skill = DbSkills(
-        name=schema.name
-    )
+    new_skill_already_exists(db, schema.name)
+    new_skill = DbSkills(name=schema.name)
+
     try:
         db.add(new_skill)
         db.commit()
@@ -120,27 +138,19 @@ async def create_new_skill(db: Session, schema: AdSkills) -> DbSkills:
 
 
 async def get_skills_crud(db: Session, page: Optional[int] = 1) -> List[Type[AdSkills]]:
-    skills_query = db.query(DbSkills).limit(5).offset((page - 1) * 5)
-    skills = skills_query.all()
+    query = db.query(DbSkills).filter(DbSkills.is_deleted == 0)
+    skills = paginate(query, page, 5)
+
     if not skills:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='There are no available skills to display, add a skill first'
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='There are no available skills to display, add a skill first')
 
     return skills
 
 
 async def update_skill_crud(db: Session, skill_name: str, new_name: str) -> Type[DbSkills]:
-    skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
-
-    if not skill:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
-
-    existing_skill = db.query(DbSkills).filter(DbSkills.name == new_name).first()
-    if existing_skill:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Skill already exists')
-
+    skill = get_skill(db, skill_name)
+    new_skill_already_exists(db, new_name)
     skill.name = new_name
 
     try:
@@ -153,12 +163,8 @@ async def update_skill_crud(db: Session, skill_name: str, new_name: str) -> Type
 
 
 async def delete_skill_crud(db: Session, skill_name: str) -> None:
-    skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
-
-    if not skill:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
-
-    db.delete(skill)
+    skill = get_skill(db, skill_name)
+    skill.is_deleted = 1
     try:
         db.commit()
     except IntegrityError as err:
@@ -166,32 +172,25 @@ async def delete_skill_crud(db: Session, skill_name: str) -> None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
 
 
-async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: SkillLevel) -> IncludeSkillToAddDisplay:
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
-    ad_id: int = ad.id
-    skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
-    skill_id: int = skill.id
+async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: SkillLevel) -> AddSkillToAdDisplay:
+    ad = get_ad(db, ad_id)
+    skill = get_skill(db, skill_name)
 
-    if not ad:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
-    elif not skill:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
-
-    skill_added = db.query(adds_skills) \
-        .join(DbSkills, adds_skills.c.skill_id == skill_id) \
-        .join(DbAds, adds_skills.c.ad_id == ad_id) \
+    skill_already_added = db.query(adds_skills) \
+        .join(DbSkills, adds_skills.c.skill_id == str(skill.id)) \
+        .join(DbAds, adds_skills.c.ad_id == str(ad.id)) \
         .filter(DbAds.id == ad_id, DbSkills.name == skill_name) \
         .first()
 
-    if skill_added:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Skill already added')
+    if skill_already_added:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"'{skill_name}' already added to this ad")
 
     ad_skill = adds_skills.insert().values(ad_id=ad.id, skill_id=skill.id, level=level.value)
-    db.execute(ad_skill)
 
     try:
+        db.execute(ad_skill)
         db.commit()
-        return IncludeSkillToAddDisplay(
+        return AddSkillToAdDisplay(
             skill_name=skill.name,
             level=level
         )
@@ -201,33 +200,98 @@ async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: 
 
 
 async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) -> None:
-    ad = db.query(DbAds).filter(DbAds.id == ad_id).first()
-    ad_id: int = ad.id
-    skill = db.query(DbSkills).filter(DbSkills.name == skill_name).first()
-    skill_id: int = skill.id
-
-    if not ad:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
-    elif not skill:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
+    ad = get_ad(db, ad_id)
+    skill = get_skill(db, skill_name)
 
     skill_to_remove = (db.query(adds_skills)
-                       .join(DbSkills, adds_skills.c.skill_id == skill_id)
-                       .join(DbAds, adds_skills.c.ad_id == ad_id)
+                       .join(DbSkills, adds_skills.c.skill_id == str(skill.id))
+                       .join(DbAds, adds_skills.c.ad_id == str(ad.id))
                        .filter(DbAds.id == ad_id, DbSkills.name == skill_name)
                        .first())
 
     if not skill_to_remove:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not associated with this ad')
-
-    db.execute(
-        adds_skills.delete().where(
-            adds_skills.c.ad_id == ad_id,
-            adds_skills.c.skill_id == skill.id)
-    )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"'{skill_name}' does not exist in this ad")
 
     try:
+        db.execute(
+            adds_skills.delete().where(
+                adds_skills.c.ad_id == ad_id,
+                adds_skills.c.skill_id == skill.id)
+        )
         db.commit()
     except IntegrityError as err:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
+
+
+def filter_ads(query, description=None, location=None, ad_status=None, min_salary=None, max_salary=None):
+    if description:
+        keywords = description.split()
+        for keyword in keywords:
+            query = query.filter(DbAds.description.ilike(f'%{keyword}%'))
+    if location:
+        query = query.filter(DbAds.location.ilike(f'%{location}%'))
+    if ad_status:
+        query = query.filter(DbAds.status == ad_status.value)
+    if min_salary:
+        query = query.filter(DbAds.min_salary >= min_salary)
+    if max_salary:
+        query = query.filter(DbAds.max_salary <= max_salary)
+    return query
+
+
+def update_ad(ad: Type[DbAds], description: Optional[str] = None, location: Optional[str] = None,
+              ad_status: Union[Optional[JobAdStatus], Optional[ResumeStatus], None] = None,
+              min_salary: Optional[int] = None, max_salary: Optional[int] = None):
+    if description is not None:
+        ad.description = description
+    if location is not None:
+        ad.location = location
+    if ad_status is not None:
+        ad.status = ad_status.value
+    if min_salary is not None:
+        ad.min_salary = min_salary
+    if max_salary is not None:
+        ad.max_salary = max_salary
+
+
+def paginate(query, page: int, page_size: int = 2):
+    return query.limit(page_size).offset((page - 1) * page_size).all()
+
+
+def get_ad(db: Session, ad_id: str) -> Type[DbAds]:
+    ad = db.query(DbAds).filter(DbAds.id == ad_id, DbAds.is_deleted == 0).first()
+    if not ad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ad not found')
+
+    return ad
+
+
+def get_skill(db: Session, skill_name: str) -> Type[DbSkills]:
+    skill = db.query(DbSkills).filter(DbSkills.name == skill_name, DbSkills.is_deleted == 0).first()
+    if not skill:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Skill not found')
+
+    return skill
+
+
+def new_skill_already_exists(db: Session, skill_name: str) -> None:
+    skill = db.query(DbSkills).filter(DbSkills.name == skill_name, DbSkills.is_deleted == 0).first()
+    if skill:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Skill with name {skill_name} already '
+                                                                            f'exists')
+
+
+def get_professional(db: Session, current_user: DbUsers) -> Type[DbProfessionals] | None:
+    professional = db.query(DbProfessionals).filter(DbProfessionals.user_id == str(current_user.id)).first()
+    return professional
+
+
+def get_company(db: Session, current_user: DbUsers) -> Type[DbCompanies] | None:
+    company = db.query(DbCompanies).filter(DbCompanies.user_id == str(current_user.id)).first()
+    return company
+
+
+def check_user_authorization(user: DbUsers, author: Union[Type[DbProfessionals], Type[DbCompanies]], ad: Type[DbAds]):
+    if user.type != 'admin' and author.info_id != ad.info_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only the author can apply changes')
