@@ -17,6 +17,19 @@ router = APIRouter()
 @router.get('/professionals/resumes')
 async def get_all_resumes(db: Annotated[Session, Depends(get_db)],
                           verified_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)]):
+    """
+    Retrieve all resumes associated with the authenticated professional.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (DbUsers): The verified user obtained from the dependency.
+
+    Returns:
+    List[Resume]: A list of resumes associated with the authenticated professional.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue retrieving the resumes.
+    """
     professional: DbProfessionals = await crud_professional.get_professional(db, verified_user)
 
     return crud_professional.get_resumes(db, professional)
@@ -31,7 +44,25 @@ async def get_professionals(db: Annotated[Session, Depends(get_db)],
                       search_by_location: Annotated[str, Query(description='Optional location search parameter')] = None,
                       page: Annotated[int, Query(description='Optional page for pagination')] = None,
                       page_items: Annotated[int, Query(description='Optional total elements per page')] = None):
-    
+    """
+    Retrieve a list of professionals based on specified search parameters.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `_` (UserDisplay): The current user obtained from the dependency.
+    - `search_by_first_name` (str, optional): Optional first name search parameter.
+    - `search_by_last_name` (str, optional): Optional last name search parameter.
+    - `search_by_status` (ProfessionalStatus, optional): Optional status search parameter.
+    - `search_by_location` (str, optional): Optional location search parameter.
+    - `page` (int, optional): Optional page number for pagination.
+    - `page_items` (int, optional): Optional total elements per page.
+
+    Returns:
+    List[ProfessionalDisplay]: A list of professionals based on the specified search parameters.
+
+    Raises:
+    HTTPException: If there's an issue retrieving the professionals.
+    """
     professionals = await crud_professional.get_all_approved_professionals(db, search_by_first_name, search_by_last_name, search_by_status, search_by_location, page, page_items)
     return professionals
 
@@ -39,12 +70,37 @@ async def get_professionals(db: Annotated[Session, Depends(get_db)],
 @router.get('/professionals/info', response_model=ProfessionalInfoDisplay)
 async def get_professional_info(db: Annotated[Session, Depends(get_db)],
                                 verified_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)]):
-      
+    """
+    Retrieve detailed information about the authenticated professional.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (DbUsers): The verified user obtained from the dependency.
+
+    Returns:
+    ProfessionalInfoDisplay: Detailed information about the authenticated professional.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue retrieving the professional's information.
+    """
     return await crud_professional.get_info(db, verified_user)
 
 
 @router.post('/professionals', response_model=ProfessionalCreateDisplay)
 async def create_professional(schema: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
+    """
+    Create a new professional based on the provided information.
+
+    Parameters:
+    - `schema` (ProfessionalCreate): The data schema for creating a professional.
+    - `db` (Session): The SQLAlchemy database session dependency.
+
+    Returns:
+    ProfessionalCreateDisplay: Information about the created professional.
+
+    Raises:
+    HTTPException: If there's an issue creating the professional.
+    """
     return await create_user(db, schema)
 
 
@@ -54,7 +110,22 @@ async def edit_professional_info(db: Annotated[Session, Depends(get_db)],
                         location: str,
                         first_name: Annotated[str, Query(description='Optional first name update parameter')] = None,
                         last_name: Annotated[str, Query(description='Optional last name update parameter')] = None):
+    """
+    Update information about the authenticated professional.
 
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (DbUsers): The verified user obtained from the dependency.
+    - `location` (str): The updated location information.
+    - `first_name` (str, optional): Optional updated first name parameter.
+    - `last_name` (str, optional): Optional updated last name parameter.
+
+    Returns:
+    dict: A message indicating the successful update.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue updating the professional's information.
+    """
     return await crud_professional.edit_info(db, verified_user, first_name, last_name, location)
 
 
@@ -62,19 +133,60 @@ async def edit_professional_info(db: Annotated[Session, Depends(get_db)],
 async def edit_summary(db: Annotated[Session, Depends(get_db)],
                         verified_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
                         summary: str):
-    
+    """
+    Update the professional summary for the authenticated professional.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (DbUsers): The verified user obtained from the dependency.
+    - `summary` (str): The updated professional summary.
+
+    Returns:
+    dict: A message indicating the successful update.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue updating the professional's summary.
+    """
     return await crud_professional.edit_professional_summary(db, verified_user, summary)
 
 
 @router.patch('/professionals/status')
 async def change_professional_status(status: ProfessionalStatus, db: Annotated[Session, Depends(get_db)],
                                      verified_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)]):
+    """
+    Change the status of the authenticated professional.
+
+    Parameters:
+    - `status` (ProfessionalStatus): The updated professional status.
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (DbUsers): The verified user obtained from the dependency.
+
+    Returns:
+    dict: A message indicating the successful status change.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue changing the professional's status.
+    """
     return await crud_professional.change_status(status, db, verified_user)
 
 
 @router.patch('/professionals/resume/{resume_id}')
 async def set_main_resume(resume_id: str, db: Annotated[Session, Depends(get_db)],
                                verified_user: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)]):
+    """
+    Set the specified resume as the main resume for the authenticated professional.
+
+    Parameters:
+    - `resume_id` (str): The ID of the resume to be set as the main resume.
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `verified_user` (UserDisplay): The verified user obtained from the dependency.
+
+    Returns:
+    dict: A message indicating the successful setup of the main resume.
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue setting up the main resume.
+    """
     return await crud_professional.setup_main_resume(resume_id, db, verified_user)
 
 
@@ -89,5 +201,19 @@ async def delete_professional_resume(db: Annotated[Session, Depends(get_db)],
 async def delete_professional_profile(db: Annotated[Session, Depends(get_db)],
                                _: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
                                professional_id: Annotated[str, Path(description='Optional resume id update parameter')]):
+    """
+    Delete the profile of a specific professional.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session dependency.
+    - `_` (UserDisplay): The current user obtained from the dependency.
+    - `professional_id` (str): The ID of the professional profile to be deleted.
+
+    Returns:
+    None
+
+    Raises:
+    HTTPException: If the user is not verified or if there's an issue deleting the professional profile.
+    """
     return await crud_professional.delete_professional_by_id(db, professional_id)
 
