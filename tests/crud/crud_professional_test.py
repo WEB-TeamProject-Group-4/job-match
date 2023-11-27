@@ -1,4 +1,5 @@
 import pytest
+import io
 
 from fastapi import HTTPException
 from app.crud import crud_professional
@@ -315,6 +316,79 @@ async def test_delete_profile(db, mocker, test_db, filling_test_db, filling_info
     assert deleted_professional.is_deleted == True
     assert deleted_info.is_deleted == True
     assert deleted_resume.is_deleted == True
+
+
+@pytest.mark.asyncio
+async def test_upload_picture_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
+    info: DbInfo = filling_info_test_db
+    test_image_content = b'Test image content'
+    test_image = bytearray(test_image_content)
+
+    response = await crud_professional.upload_picture(db, info.id, test_image)
+    updated_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+
+    assert response["message"] == 'Image uploaded successfully'
+    assert updated_info.picture is not None
+
+
+@pytest.mark.asyncio
+async def test_upload_picture_raise404(db, mocker, test_db, filling_test_db):
+    info_id = 'wrong-info-id'
+    test_image_content = b'Test image content'
+    test_image = bytearray(test_image_content)
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.upload_picture(db, info_id, test_image)
+
+    assert exception.value.status_code == 404
+    assert exception.value.detail == 'Please edit your personal information.'
+
+
+@pytest.mark.asyncio
+async def test_upload_picture_raise400(db, mocker, test_db, filling_test_db, filling_info_test_db):
+    info: DbInfo = filling_info_test_db
+    test_large_image_content = b'A' * (crud_professional.MAX_IMAGE_SIZE_BYTES + 1)
+    test_large_image = bytearray(test_large_image_content)
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.upload_picture(db, info.id, test_large_image)
+
+    assert exception.value.status_code == 400
+    assert exception.value.detail == 'Image size exceeds the maximum allowed size.'
+
+
+@pytest.mark.asyncio
+async def test_get_image_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
+    info: DbInfo = filling_info_test_db
+    test_image_content = b'Test image content'
+    test_image = bytearray(test_image_content)
+    info.picture = test_image
+    db.commit()
+
+    await crud_professional.get_image(db, info.id)
+    updated_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+
+    assert updated_info.picture is not None
+    assert type(updated_info.picture) == bytes
+
+
+@pytest.mark.asyncio
+async def test_get_image_raise404(db, mocker, test_db, filling_test_db):
+    info_id = 'wrong-info-id'
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.get_image(db, info_id)
+    
+    assert exception.value.status_code == 404
+    assert exception.value.detail == 'Please edit your personal information.'
+
+
+
+
+
+
+
+
 
 
 
