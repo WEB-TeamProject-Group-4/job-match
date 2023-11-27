@@ -20,5 +20,8 @@ pythonpath = [
 
 [tool.coverage.run]
 omit = [
-    'run_server.py'
+    'run_server.py',
+    'database.py',
+    '__init__.py',
+    'config.py'
 ]

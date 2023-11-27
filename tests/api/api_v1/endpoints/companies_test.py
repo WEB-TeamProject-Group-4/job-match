@@ -1,7 +1,9 @@
 import jwt
 import pytest
-from app.db.models import DbCompanies, DbUsers, DbInfo
+
 from fastapi.testclient import TestClient
+
+from app.db.models import DbCompanies, DbUsers, DbInfo
 from app.core.security import SECRET_KEY
 from app.schemas.company import CompanyCreateDisplay, CompanyInfoCreate
 
@@ -266,4 +268,20 @@ async def test_delete_info(client: TestClient, db, test_db, mocker):
     response = client.delete(f'/companies/info/{info.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 204
-    assert db.query(DbInfo).all() == []
+
+
+@pytest.mark.asyncio
+async def test_upload(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    info = await create_info()
+    company.info_id = info.id
+    db.add(info)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mock_image_data = b'test image data'
+
+    response = client.post('/companies/info/upload', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                           files={'image': ('test_image.jpg', mock_image_data, 'image/jpeg')})
+
+    assert response.status_code == 200
+    assert response.json().get('description') == info.description

@@ -20,5 +20,5 @@ async def test_send_mail(mocker):
 
     await send_email(dummy_email, dummy_user)
 
-    mock_create_access_token.asser_called_once()
-    await mock_send_message.asser_called_once()
+    mock_create_access_token.assert_called_once()
+    mock_send_message.assert_called_once()

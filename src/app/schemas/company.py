@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ByteSize
 from app.schemas.user import UsernameDisplay, UserCreate
 
 
@@ -28,11 +28,7 @@ class CompanyInfoCreate(BaseModel):
     location: str
 
 
-class CompanyInfoCreateDisplay(CompanyInfoCreate):
-    picture: str | None
-
-
-class CompanyInfoDisplay(CompanyInfoCreateDisplay):
+class CompanyInfoDisplay(CompanyInfoCreate):
     id: str
     active_job_ads: int
     number_of_matches: int

@@ -1,6 +1,6 @@
-from typing import Annotated, List
+from typing import Annotated, List, Union
 
-from fastapi import Depends, APIRouter, HTTPException, status, Query, Path
+from fastapi import Depends, APIRouter, HTTPException, status, Query, Path, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -30,13 +30,7 @@ async def get_companies(db: Annotated[Session, Depends(get_db)],
 @router.get('/companies/{company_id}', response_model=company.CompanyDisplay)
 async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
                             company_id: Annotated[str, Path(description='Mandatory company id path parameter')]):
-    company = await CRUDCompany.get_by_id(db, company_id)
-    if not company:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Company with id {company_id} does not exist.'
-        )
-    return company
+    return await CRUDCompany.get_by_id(db, company_id)
 
 
 @router.patch('/companies', response_model=company.UpdateCompanyDisplay)
@@ -62,12 +56,11 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
     return await CRUDCompany.delete_by_id(db, company_id, current_user)
 
 
-@router.post('/companies/info', response_model=company.CompanyInfoCreateDisplay,
+@router.post('/companies/info', response_model=company.CompanyInfoCreate,
              status_code=status.HTTP_201_CREATED)
 async def create_company_info(db: Annotated[Session, Depends(get_db)],
                               current_user: Annotated[DbUsers, Depends(get_current_user)],
-                              schema: company.CompanyInfoCreate
-                              ):
+                              schema: company.CompanyInfoCreate):
     if not current_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -76,6 +69,15 @@ async def create_company_info(db: Annotated[Session, Depends(get_db)],
     else:
         info = await CRUDCompany.create_info(db, current_user.company[0].id, schema)
         return info
+
+
+@router.post('/companies/info/upload', response_model=company.CompanyInfoCreate)
+async def upload(db: Annotated[Session, Depends(get_db)],
+                 current_user: Annotated[DbUsers, Depends(get_current_user)],
+                 image: Annotated[UploadFile, File()]):
+    f = await image.read()
+    b = bytearray(f)
+    return await CRUDCompany.upload(db, current_user.company[0].info_id, b)
 
 
 @router.get('/companies/info/', response_model=company.CompanyInfoDisplay)
@@ -92,7 +94,7 @@ async def get_company_info(db: Annotated[Session, Depends(get_db)],
         return info
 
 
-@router.patch('/companies/info', response_model=company.CompanyInfoCreateDisplay)
+@router.patch('/companies/info', response_model=company.CompanyInfoCreate)
 async def update_info(db: Annotated[Session, Depends(get_db)],
                       current_user: Annotated[DbUsers, Depends(get_current_user)],
                       description: Annotated[str, Query(description='Optional description update parameter')] = None,
