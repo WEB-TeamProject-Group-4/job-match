@@ -49,6 +49,6 @@ class AdDisplay(AdCreate):
     skills: List[AdSkills]
 
 
-class IncludeSkillToAddDisplay(BaseModel):
+class AddSkillToAdDisplay(BaseModel):
     skill_name: str
     level: SkillLevel
