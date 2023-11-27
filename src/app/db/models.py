@@ -1,7 +1,11 @@
-from app.db.database import Base
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY, LargeBinary
-from sqlalchemy.orm import relationship
 import uuid
+
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY, LargeBinary
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import relationship
+
+from app.db.database import Base
+
 
 adds_skills = Table(
     'adds_skills', Base.metadata,
@@ -20,6 +24,7 @@ class DbJobsMatches(Base):
     professional = relationship('DbProfessionals', back_populates='match')
     company = relationship('DbCompanies', back_populates='match')
     ad = relationship('DbAds', back_populates='match')
+    is_deleted = Column(Boolean, default=False)
 
 
 class DbUsers(Base):
@@ -48,6 +53,17 @@ class DbProfessionals(Base):
     info = relationship('DbInfo', back_populates='professional', cascade='all, delete-orphan', single_parent=True)
     match = relationship('DbJobsMatches', back_populates='professional')
 
+    def mark_as_deleted(self, db: Session):
+        if self.user:
+            self.user.is_deleted = True
+        if self.info:
+            self.info.is_deleted = True
+        for match in self.match:
+            match.is_deleted = True
+        self.is_deleted = True
+
+        db.commit()
+
 
 class DbCompanies(Base):
     __tablename__: str = 'companies'
@@ -62,6 +78,18 @@ class DbCompanies(Base):
     match = relationship("DbJobsMatches", back_populates='company')
 
 
+    def mark_as_deleted(self, db: Session):
+        if self.user:
+            self.user.is_deleted = True
+        if self.info:
+            self.info.is_deleted = True
+        for match in self.match:
+            match.is_deleted = True
+        self.is_deleted = True
+
+        db.commit()
+
+        
 class DbInfo(Base):
     __tablename__: str = 'info'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
