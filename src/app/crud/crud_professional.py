@@ -131,12 +131,16 @@ async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
     
     raise HTTPException(status_code=404, detail="Resume not found")
 
-
+    
 async def delete_professional_by_id(db: Session, professional_id: str) -> None:
-    professional = db.query(DbProfessionals).filter(DbProfessionals.id == professional_id, DbProfessionals.is_deleted == False).first()
-    if professional:  
-        db.delete(professional)
-        db.commit()
+    professional: DbProfessionals = db.query(DbProfessionals).filter(DbProfessionals.id == professional_id).first()
+    resumes:DbAds = db.query(DbAds).filter(DbAds.info_id == professional.info_id).all()
+    if resumes:
+        for resume in resumes:
+            resume.is_deleted = True
+
+    if professional:
+        professional.mark_as_deleted(db)
         return
 
 

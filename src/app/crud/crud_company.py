@@ -66,9 +66,11 @@ class CRUDCompany(Generic[CompanyModelType, InfoModel, UserModelType]):
                 detail='Deletion of the company is restricted to administrators or the company owner.'
             )
         else:
-            company.is_deleted = True
-            user.is_deleted = True
-            db.commit()
+            resumes:DbAds = db.query(DbAds).filter(DbAds.info_id == company.info_id).all()
+            if resumes:
+                for resume in resumes:
+                    resume.is_deleted = True
+            company.mark_as_deleted(db)
             return
 
     @staticmethod

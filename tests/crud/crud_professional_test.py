@@ -311,10 +311,10 @@ async def test_delete_profile(db, mocker, test_db, filling_test_db, filling_info
     deleted_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
     deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
     
-    assert deleted_user == None
-    assert deleted_professional == None
-    assert deleted_info == None
-    assert deleted_resume == None
+    assert deleted_user.is_deleted == True
+    assert deleted_professional.is_deleted == True
+    assert deleted_info.is_deleted == True
+    assert deleted_resume.is_deleted == True
 
 
 
