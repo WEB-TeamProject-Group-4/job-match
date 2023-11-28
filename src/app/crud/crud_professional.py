@@ -400,60 +400,92 @@ async def get_image(db: Session, info_id: DbUsers) -> StreamingResponse:
     return StreamingResponse(io.BytesIO(user_info.picture), media_type="image/jpeg")
 
 
-async def find_matches(db: Session, user: DbUsers, threshold: float) -> Dict[str, str]:
+async def find_matches(db: Session, user: DbUsers, threshold: float, ad_id: str) -> Dict[str, str]:
+    """
+    Find matching job advertisements for a user's resume based on specified criteria.
+
+    Parameters:
+    - db (Session): SQLAlchemy database session.
+    - user (DbUsers): User for whom matches are being searched.
+    - threshold (float): The threshold for skill similarity, a value between 0 and 1.
+    - ad_id (str): The ID of the user's resume (DbAds) for which matches are sought.
+
+    Returns:
+    Dict[str, str]: A dictionary indicating the result of the matching process.
+
+    Raises:
+    HTTPException: Raises a 404 Not Found exception if the specified resume (ad_id) is not found.
+
+    The function retrieves the professional information related to the user, then finds the
+    user's resume (DbAds) based on the provided ad_id. It calculates an adjusted salary range
+    based on the threshold and filters active job advertisements matching the location and
+    adjusted salary range. The skill similarity between the user's resume and each job
+    advertisement is calculated, and matches are recorded in the database (DbJobsMatches).
+    """
     result = False
-    professional: DbProfessionals = await get_professional(db, user)
-    if not professional.info:
+    resume:DbAds = db.query(DbAds).filter(DbAds.id == ad_id, DbAds.info_id == user.professional[0].info_id, DbAds.is_deleted == False).first()
+    if not resume:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            detail='You have no matches'
+            detail=f'There is no resume with id: {ad_id}'
         )
-    resumes:DbAds = db.query(DbAds).filter(DbAds.info_id == professional.info_id).all()
-    if not resumes:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
-            detail='You have no matches'
-        )
+
+    salary_range_adjusted_min = int(resume.min_salary - (resume.min_salary * threshold))
+    salary_range_adjusted_max = int(resume.max_salary + (resume.max_salary * threshold))
+    resume_skills = [skill.id for skill in resume.skills]
+    ads = db.query(DbAds).filter(
+        DbAds.is_deleted == False, 
+        DbAds.status == 'Active', 
+        DbAds.location == resume.location, 
+        DbAds.min_salary >= salary_range_adjusted_min, 
+        DbAds.max_salary <= salary_range_adjusted_max, 
+        DbAds.is_resume == 0).all()
     
-    for resume in resumes:
-        salary_range_adjusted_min = int(resume.min_salary - (resume.min_salary * threshold))
-        salary_range_adjusted_max = int(resume.max_salary + (resume.max_salary * threshold))
-        resume_skills = [skill.id for skill in resume.skills]
-        ads = db.query(DbAds).filter(
-            DbAds.is_deleted == False, 
-            DbAds.status == 'Active', 
-            DbAds.location == resume.location, 
-            DbAds.min_salary >= salary_range_adjusted_min, 
-            DbAds.max_salary <= salary_range_adjusted_max, 
-            DbAds.is_resume == 0).all()
-        
-        if ads:
-            for ad in ads:
-                try:
-                    ad_skills = [skill.id for skill in ad.skills]
-                    company = db.query(DbCompanies.id).join(DbInfo, DbAds.info).filter(DbAds.id == ad.id).first()
-                    company_id = company[0]
-                    similarity = calculate_similarity(set(resume_skills), set(ad_skills), threshold=(1-threshold))
-                    if similarity:
-                        new_match = DbJobsMatches(ad_id=ad.id, professional_id=professional.id, company_id=company_id,
-                                            approved=False)
-                        db.add(new_match)
-                        result = True
-                        db.commit()
-                except IntegrityError as error:
-                    db.rollback()
-                    continue
+    if ads:
+        for ad in ads:
+            try:
+                ad_skills = [skill.id for skill in ad.skills]
+                company = (db.query(DbCompanies.id).join(DbInfo, DbCompanies.info_id == DbInfo.id)
+                    .join(DbAds, DbInfo.id == DbAds.info_id).filter(DbAds.id == ad.id)
+                    .first()
+                )
+                similarity = calculate_similarity(set(resume_skills), set(ad_skills), threshold=(1-threshold))
+                if similarity:
+                    new_match = DbJobsMatches(ad_id=ad.id, resume_id=resume.id, professional_id=resume.info.professional[0].id, company_id=company.id)
+                    db.add(new_match)
+                    db.commit()
+                    result = True
+            except IntegrityError as error:
+                db.rollback()
+                continue
 
     if result:
         return {'message': 'You have new matches!'}
 
     raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            detail='You have no matches'
+            detail='You have no new matches'
         )
 
 
-def calculate_similarity(resume_skills: set, ad_skills: set, threshold: float):
+def calculate_similarity(resume_skills: set, ad_skills: set, threshold: float) -> bool:
+    """
+    Calculate the Jaccard similarity between two sets of skills.
+
+    Jaccard similarity is a measure of how much two sets overlap. It is calculated
+    as the size of the intersection divided by the size of the union of two sets.
+
+    Parameters:
+    - resume_skills (set): Set of skills from the resume.
+    - ad_skills (set): Set of skills from the job advertisement.
+    - threshold (float): The threshold for similarity, a value between 0 and 1.
+
+    Returns:
+    bool: True if the Jaccard similarity is equal to or greater than the threshold,
+          False otherwise.
+
+    If the union of the sets is empty, the similarity is considered 0.
+    """
     intersection_size = len(resume_skills.intersection(ad_skills))
     union_size = len(resume_skills.union(ad_skills))
 
@@ -465,7 +497,7 @@ def calculate_similarity(resume_skills: set, ad_skills: set, threshold: float):
     return similarity >= threshold
 
 
-async def get_matches(db :Session, user: DbUsers) -> list[ProfessionalAdMatchDisplay]:
+async def get_potential_matches(db :Session, user: DbUsers) -> list[ProfessionalAdMatchDisplay]:
     """
     Retrieve a list of matches for the authenticated professional.
 
@@ -477,8 +509,7 @@ async def get_matches(db :Session, user: DbUsers) -> list[ProfessionalAdMatchDis
     List[ProfessionalAdMatchDisplay]: A list of matches represented as ProfessionalAdMatchDisplay instances.
     """
     matches: List[DbJobsMatches] = (db.query(DbJobsMatches).join(DbAds, DbJobsMatches.ad_id == DbAds.id)
-    .filter(DbJobsMatches.professional_id == user.professional[0].id, DbJobsMatches.is_deleted == False)
-    .all())
+    .filter(DbJobsMatches.professional_id == user.professional[0].id, DbJobsMatches.is_deleted == False).all())
 
     return [
     ProfessionalAdMatchDisplay(
@@ -488,7 +519,8 @@ async def get_matches(db :Session, user: DbUsers) -> list[ProfessionalAdMatchDis
         status=match.ad.status,
         min_salary=match.ad.min_salary,
         max_salary=match.ad.max_salary,
-        is_approved=match.approved
+        company_approved=match.company_approved,
+        professional_approved=match.professional_approved
     )
     for match in matches
 ]
@@ -509,9 +541,12 @@ async def approve_match_by_ad_id(db: Session, user: DbUsers, ad_id: str) -> Dict
     Raises:
     HTTPException: If the ad with the specified ID is not found in job matches.
     """
-    ad_in_job_matches: DbJobsMatches = db.query(DbJobsMatches).filter(DbJobsMatches.ad_id == ad_id, DbJobsMatches.is_deleted == False).first()
+
+    ad_in_job_matches: DbJobsMatches = db.query(DbJobsMatches).filter(DbJobsMatches.ad_id == ad_id,
+                                                                      DbJobsMatches.professional_id == user.professional[0].id, 
+                                                                      DbJobsMatches.is_deleted == False).first()
     if ad_in_job_matches:
-        ad_in_job_matches.approved = True
+        ad_in_job_matches.professional_approved = True
         db.commit()
         return {'message': 'Match approved!'}
 

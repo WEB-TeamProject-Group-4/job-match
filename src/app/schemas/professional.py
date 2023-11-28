@@ -46,6 +46,8 @@ class ProfessionalAdMatchDisplay(BaseModel):
     status: str
     min_salary: int
     max_salary: int
-    is_approved: bool
+    company_approved: bool
+    professional_approved: bool
+
 
 
