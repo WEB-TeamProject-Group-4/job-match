@@ -1,6 +1,6 @@
 from typing import Annotated, List
 
-from fastapi import Depends, APIRouter, Path, Query
+from fastapi import Depends, APIRouter, File, Path, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -86,6 +86,24 @@ async def get_professional_info(db: Annotated[Session, Depends(get_db)],
     return await crud_professional.get_info(db, verified_user)
 
 
+@router.get('/professionals/image')
+async def get_image(db: Annotated[Session, Depends(get_db)],
+                 current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)]):
+    """
+    Get the image associated with the professional profile.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session.
+    - `current_user` (DbUsers): The authenticated user.
+
+    Returns:
+    StreamingResponse: A streaming response containing the professional's image.
+                      Returns a 404 error if the professional or image is not found.
+    """
+
+    return await crud_professional.get_image(db, current_user.professional[0].info_id)
+
+
 @router.post('/professionals', response_model=ProfessionalCreateDisplay)
 async def create_professional(schema: ProfessionalCreate, db: Annotated[Session, Depends(get_db)]):
     """
@@ -127,6 +145,27 @@ async def edit_professional_info(db: Annotated[Session, Depends(get_db)],
     HTTPException: If the user is not verified or if there's an issue updating the professional's information.
     """
     return await crud_professional.edit_info(db, verified_user, first_name, last_name, location)
+
+
+@router.post('/professionals/image')
+async def upload(db: Annotated[Session, Depends(get_db)],
+                 current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
+                 image: Annotated[UploadFile, File()]):
+    """
+    Upload a new image for the professional profile.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session.
+    - `current_user` (DbUsers): The authenticated user.
+    - `image` (UploadFile): The image file to be uploaded.
+
+    Returns:
+    Dict[str, str]: A dictionary with a message indicating the success of the image upload.
+                   Returns a 404 error if the professional profile is not found.
+    """
+    file = await image.read()
+    binary_pic = bytearray(file)
+    return await crud_professional.upload_picture(db, current_user.professional[0].info_id, binary_pic)
 
 
 @router.patch('/professionals/summary')
@@ -216,4 +255,11 @@ async def delete_professional_profile(db: Annotated[Session, Depends(get_db)],
     HTTPException: If the user is not verified or if there's an issue deleting the professional profile.
     """
     return await crud_professional.delete_professional_by_id(db, professional_id)
+
+
+
+
+
+
+
 

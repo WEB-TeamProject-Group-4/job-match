@@ -1,8 +1,9 @@
 from typing import Annotated, Dict, List, Optional, Type, Union
+import io
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
@@ -10,6 +11,7 @@ from app.schemas.professional import ProfessionalInfoDisplay
 
 
 DEFAULT_VALUE_ITEMS_PER_PAGE = 10
+MAX_IMAGE_SIZE_BYTES = 300 * 300
 
 
 async def edit_info(db: Session, user: DbUsers, first_name: Optional[str], 
@@ -136,7 +138,6 @@ async def get_info(db: Session, user: DbUsers) -> ProfessionalInfoDisplay:
         summary=professional.info.description,
         location=professional.info.location,
         status=professional.status,
-        picture=professional.info.picture,
         active_resumes=len(resumes)
     )
     
@@ -339,6 +340,69 @@ async def get_all_approved_professionals(db: Session, first_name: Optional[str],
     total_elements = professionals.count()
 
     return professionals.offset((page - 1) * page_items).limit(page_items).all()
+
+
+async def upload_picture(db: Session, info_id: str, image: bytearray) -> Dict[str, str]:
+    """
+    Uploads a user's profile picture to the database.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session.
+    - `info_id` (str): The ID of the user's information record.
+    - `image` (bytearray): The binary representation of the image to be uploaded.
+
+    Returns:
+    Dict[str, str]: A dictionary with a message indicating the success of the image upload.
+
+    Raises:
+    HTTPException: If the user's information is not found or if there's an issue with the image size.
+    """
+    user_info:DbInfo = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Please edit your personal information.'
+        )
+    
+    if len(image) > MAX_IMAGE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Image size exceeds the maximum allowed size.'
+        )
+    
+    user_info.picture = image
+    db.commit()
+    return {"message": "Image uploaded successfully"}
+
+
+async def get_image(db: Session, info_id: DbUsers) -> StreamingResponse:
+    """
+    Retrieves a user's profile picture as a streaming response.
+
+    Parameters:
+    - `db` (Session): The SQLAlchemy database session.
+    - `info_id` (DbUsers): The ID of the user's information record.
+
+    Returns:
+    StreamingResponse: A streaming response containing the user's profile picture.
+
+    Raises:
+    HTTPException: If the user's information is not found.
+    """
+    user_info:DbInfo = db.query(DbInfo).filter(DbInfo.id == info_id, DbInfo.is_deleted == False).first()
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Please edit your personal information.'
+        )
+    
+    return StreamingResponse(io.BytesIO(user_info.picture), media_type="image/jpeg")
+
+
+
+
+
+
     
     
 

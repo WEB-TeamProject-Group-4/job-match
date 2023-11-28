@@ -2,6 +2,7 @@ import jwt
 import pytest
 
 from fastapi.testclient import TestClient
+from fastapi.responses import StreamingResponse
 
 from app.db.models import DbCompanies, DbUsers, DbInfo
 from app.core.security import SECRET_KEY
@@ -177,9 +178,10 @@ async def test_delete_company(client: TestClient, db, test_db, mocker):
     user, company = await fill_test_db(db)
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
 
-    response = client.delete(f'/companies/{company.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    response = client.delete(f'/companies/dummyCompanyId', headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 204
+    assert company.is_deleted == True
 
 
 @pytest.mark.asyncio
@@ -265,9 +267,10 @@ async def test_delete_info(client: TestClient, db, test_db, mocker):
     db.commit()
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
 
-    response = client.delete(f'/companies/info/{info.id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    response = client.delete(f'/companies/info/dummyInfoId', headers={"Authorization": f"Bearer {get_valid_token()}"})
 
     assert response.status_code == 204
+    assert info.is_deleted == True
 
 
 @pytest.mark.asyncio
@@ -284,4 +287,21 @@ async def test_upload(client: TestClient, db, test_db, mocker):
                            files={'image': ('test_image.jpg', mock_image_data, 'image/jpeg')})
 
     assert response.status_code == 200
-    assert response.json().get('description') == info.description
+    assert response.content == b'test image data'
+
+
+@pytest.mark.asyncio
+async def test_get_image(client: TestClient, db, test_db, mocker):
+    user, company = await fill_test_db(db)
+    info = await create_info()
+    company.info_id = info.id
+    mock_image_data = b'test image data'
+    info.picture = mock_image_data
+    db.add(info)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+
+    response = client.get('/companies/info/image', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 200
+    assert response.content == mock_image_data

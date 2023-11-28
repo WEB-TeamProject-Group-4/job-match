@@ -1,10 +1,11 @@
 import pytest
 
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.crud import crud_company
 from app.crud.crud_company import CRUDCompany
-from app.db.models import DbCompanies, DbUsers, DbInfo
+from app.db.models import DbCompanies, DbUsers, DbInfo, DbAds
 from app.schemas.company import CompanyInfoCreate
 
 
@@ -20,9 +21,22 @@ async def create_dummy_company() -> tuple[DbUsers, DbCompanies]:
     company = DbCompanies(
         id='dummyCompanyId',
         name='dummyCompanyName',
-        user_id=user.id
+        user_id=user.id,
     )
     return user, company
+
+
+async def create_dummy_ad() -> DbInfo:
+    ad = DbAds(
+        id='dummyAdId',
+        description='dummyDescription',
+        location='dummyLocation',
+        status='active',
+        min_salary=200,
+        max_salary=300,
+        info_id='dummyInfoId'
+    )
+    return ad
 
 
 async def create_info() -> DbInfo:
@@ -109,8 +123,13 @@ async def test_update(db, test_db):
 @pytest.mark.asyncio
 async def test_delete_by_id(db, test_db, mocker):
     user, company = await create_dummy_company()
+    info = await create_info()
+    company.info_id = info.id
+    ad = await create_dummy_ad()
     db.add(user)
+    db.add(info)
     db.add(company)
+    db.add(ad)
     db.commit()
     mocker.patch('app.crud.crud_company.is_admin', return_value=False)
     mocker.patch('app.crud.crud_company.is_owner', return_value=False)
@@ -127,6 +146,8 @@ async def test_delete_by_id(db, test_db, mocker):
     await CRUDCompany.delete_by_id(db, 'dummyCompanyId', user)
 
     assert company.is_deleted == True
+    assert info.is_deleted == True
+    assert ad.is_deleted == True
 
     # Test with invalid company id
     with pytest.raises(HTTPException) as exception:
@@ -280,12 +301,30 @@ async def test_upload(db, test_db):
 
     result = await CRUDCompany.upload(db, info.id, bytearray(image))
 
-    assert result.id == info.id
-    assert result.picture == bytearray(image)
+    assert isinstance(result, StreamingResponse)
 
     # Test with invalid info id
     with pytest.raises(HTTPException) as exception:
         await CRUDCompany.upload(db, 'invalidId', bytearray(image))
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_getimage(db, test_db):
+    info = await create_info()
+    db.add(info)
+    db.commit()
+    info.picture = bytearray([23, 222, 31])
+
+    result = await CRUDCompany.get_image(db, info.id)
+
+    assert isinstance(result, StreamingResponse)
+
+    # Test with invalid info id
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.get_image(db, 'invalidId')
 
     exception_info = exception.value
     assert exception_info.status_code == 404

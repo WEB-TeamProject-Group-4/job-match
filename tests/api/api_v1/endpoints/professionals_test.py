@@ -1,5 +1,6 @@
 import jwt
 import pytest
+import io
 
 from fastapi.testclient import TestClient
 
@@ -190,7 +191,6 @@ async def test_get_professional_info(client: TestClient, test_db, db, mocker, fi
         "summary": "test-description",
         "location": "Test Location",
         "status": "active",
-        "picture": None,
         "active_resumes": 0
     }
 
@@ -290,6 +290,34 @@ async def test_delete_professional_profile(client: TestClient, test_db, db, mock
     assert deleted_professional.is_deleted == True
     assert deleted_info.is_deleted == True
     assert deleted_resume.is_deleted == True
+
+
+@pytest.mark.asyncio
+async def test_get_image(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
+    user, professional = fill_test_db
+    info = fill_info_test_db
+    info.picture = 'binary-code'
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+    
+    client.get(f'/professionals/image', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    updated_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+
+    assert updated_info.picture == 'binary-code'
+
+
+@pytest.mark.asyncio
+async def test_upload(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db):
+    user, professional = fill_test_db
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+    test_image_content = b'Test image content'
+    test_image = io.BytesIO(test_image_content)
+
+    client.post(f'/professionals/image', headers={"Authorization": f"Bearer {get_valid_token()}"}, files={"image": ("test_image.jpg", test_image, "image/jpeg")})
+    updated_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
+
+    assert updated_info.picture is not None
 
     
 
