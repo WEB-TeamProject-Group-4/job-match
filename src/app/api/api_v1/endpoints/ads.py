@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query, HTTPException
+from fastapi import APIRouter, Depends, status, Query, HTTPException, Path
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 
@@ -57,10 +57,10 @@ async def get_job_ads(db: Annotated[Session, Depends(get_db)],
     return ads
 
 
-@router.put('/ads/professionals', response_model=AdDisplay)
+@router.put('/ads/professionals/{ad_id}', response_model=AdDisplay)
 async def update_resumes(db: Annotated[Session, Depends(get_db)],
                          current_user: Annotated[DbUsers, Depends(get_current_user)],
-                         ad_id: str,
+                         ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')],
                          description: Annotated[str, Query(description='Optional update parameter')] = None,
                          location: Annotated[str, Query(description='Optional update parameter')] = None,
                          ad_status: Annotated[ResumeStatus, Query(description='Optional update parameter')] = None,
@@ -75,10 +75,10 @@ async def update_resumes(db: Annotated[Session, Depends(get_db)],
     return resume
 
 
-@router.put('/ads/companies', response_model=AdDisplay)
+@router.put('/ads/companies/{ad_id}', response_model=AdDisplay)
 async def update_job_ads(db: Annotated[Session, Depends(get_db)],
                          current_user: Annotated[DbUsers, Depends(get_current_user)],
-                         ad_id: str,
+                         ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')],
                          description: Annotated[str, Query(description='Optional update parameter')] = None,
                          location: Annotated[str, Query(description='Optional update parameter')] = None,
                          ad_status: Annotated[JobAdStatus, Query(description='Optional update parameter')] = None,
@@ -94,19 +94,22 @@ async def update_job_ads(db: Annotated[Session, Depends(get_db)],
     return updated_ad
 
 
-@router.delete('/ads', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_ad(db: Annotated[Session, Depends(get_db)],
-                    current_user: Annotated[DbUsers, Depends(get_current_user)], ad_id: str):
-
-    return await delete_ad_crud(db, ad_id, current_user)
-
-
 @router.get('/ads/{ad_id}', response_model=AdDisplay)
 async def get_ad_by_id(db: Annotated[Session, Depends(get_db)],
-                       current_user: Annotated[DbUsers, Depends(get_current_user)], ad_id: str):
+                       current_user: Annotated[DbUsers, Depends(get_current_user)],
+                       ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')]):
+
     ad = await get_ad_by_id_crud(db, ad_id)
 
     return ad
+
+
+@router.delete('/ads/{ad_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ad(db: Annotated[Session, Depends(get_db)],
+                    current_user: Annotated[DbUsers, Depends(get_current_user)],
+                    ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')]):
+
+    return await delete_ad_crud(db, ad_id, current_user)
 
 
 @router.post('/skills', response_model=AdSkills)
@@ -143,18 +146,20 @@ async def delete_skill(db: Annotated[Session, Depends(get_db)],
     return await delete_skill_crud(db, skill_name)
 
 
-@router.post('/ads/{ad_id}/skills/{skill_id}', response_model=AddSkillToAdDisplay)
+@router.post('/ads/{ad_id}/skills', response_model=AddSkillToAdDisplay)
 async def add_skill_to_ad(db: Annotated[Session, Depends(get_db)],
-                          current_user: Annotated[DbUsers, Depends(get_current_user)], ad_id: str,
+                          current_user: Annotated[DbUsers, Depends(get_current_user)],
+                          ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')],
                           skill_name: Annotated[str, Query(description='Include skill')],
                           level: Annotated[SkillLevel, Query(description='Select skill level')] = SkillLevel.BEGINNER):
 
     return await add_skill_to_ad_crud(db, ad_id, skill_name, level)
 
 
-@router.delete('/ads/{ad_id}/skills/{skill_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/ads/{ad_id}/skills', status_code=status.HTTP_204_NO_CONTENT)
 async def remove_skill_from_ad(db: Annotated[Session, Depends(get_db)],
-                               current_user: Annotated[DbUsers, Depends(get_current_user)], ad_id: str,
+                               current_user: Annotated[DbUsers, Depends(get_current_user)],
+                               ad_id: Annotated[str, Path(description='Mandatory ad id path parameter')],
                                skill_name: Annotated[str, Query(description='Remove skill')]):
 
     return await remove_skill_from_ad_crud(db, ad_id, skill_name)

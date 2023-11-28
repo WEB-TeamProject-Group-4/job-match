@@ -107,6 +107,11 @@ async def update_job_ads_crud(db: Session, current_user: DbUsers, ad_id: str,
     return ad
 
 
+async def get_ad_by_id_crud(db: Session, ad_id: str) -> Type[AdDisplay]:
+    ad = get_ad(db, ad_id)
+    return ad
+
+
 async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None:
     ad = get_ad(db, ad_id)
     professional = get_professional(db, current_user)
@@ -122,11 +127,6 @@ async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None
 
     db.commit()
     return
-
-
-async def get_ad_by_id_crud(db: Session, ad_id: str) -> Type[AdDisplay]:
-    ad = get_ad(db, ad_id)
-    return ad
 
 
 async def create_new_skill(db: Session, schema: AdSkills) -> DbSkills:
