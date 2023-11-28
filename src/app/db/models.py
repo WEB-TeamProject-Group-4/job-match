@@ -6,7 +6,6 @@ from sqlalchemy.orm import relationship
 
 from app.db.database import Base
 
-
 adds_skills = Table(
     'adds_skills', Base.metadata,
     Column('ad_id', String(50), ForeignKey('ads.id'), primary_key=True),
@@ -79,7 +78,6 @@ class DbCompanies(Base):
     info = relationship('DbInfo', back_populates='company', cascade='all, delete-orphan', single_parent=True)
     match = relationship("DbJobsMatches", back_populates='company')
 
-
     def mark_as_deleted(self, db: Session):
         if self.user:
             self.user.is_deleted = True
@@ -91,7 +89,7 @@ class DbCompanies(Base):
 
         db.commit()
 
-        
+
 class DbInfo(Base):
     __tablename__: str = 'info'
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
