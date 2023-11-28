@@ -2,11 +2,11 @@ import jwt
 import pytest
 
 from fastapi.testclient import TestClient
-from fastapi.responses import StreamingResponse
 
-from app.db.models import DbCompanies, DbUsers, DbInfo
+from app.db.models import DbCompanies, DbUsers, DbInfo, DbProfessionals, DbAds, DbJobsMatches
 from app.core.security import SECRET_KEY
-from app.schemas.company import CompanyCreateDisplay, CompanyInfoCreate
+from app.schemas.company import CompanyCreateDisplay
+from tests.crud.crud_company_test import fill_match_db
 
 
 def create_user():
@@ -305,3 +305,54 @@ async def test_get_image(client: TestClient, db, test_db, mocker):
 
     assert response.status_code == 200
     assert response.content == mock_image_data
+
+
+@pytest.mark.asyncio
+async def test_search_for_matches(client: TestClient, db, test_db, mocker):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+    mocker.patch('app.crud.crud_company.calculate_similarity', return_value=True)
+    mocker.patch('app.core.auth.get_user_by_username', return_value=company.user)
+
+    response = client.post('/companies/match', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                           params={'ad_id': 'dummyAdId'})
+
+    assert response.status_code == 200
+    assert response.json().get('message') == 'You have new matches!'
+
+
+@pytest.mark.asyncio
+async def test_get_matches(client: TestClient, db, test_db, mocker):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=company.user)
+
+    response = client.get('/companies/match/', headers={"Authorization": f"Bearer {get_valid_token()}"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_approve_match(client: TestClient, db, test_db, mocker):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+    prof = db.query(DbProfessionals).first()
+    company_ad = db.query(DbAds).filter(DbAds.is_resume == False).first()
+    prof_ad = db.query(DbAds).filter(DbAds.is_resume == True).first()
+    match = DbJobsMatches(
+        ad_id=company_ad.id,
+        resume_id=prof_ad.id,
+        company_id=company.id,
+        professional_id=prof.id
+    )
+    db.add(match)
+    db.commit()
+    mocker.patch('app.core.auth.get_user_by_username', return_value=company.user)
+
+    response = client.patch('/companies/match', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                            params={'resume_id': prof_ad.id})
+
+    assert response.status_code == 200
+    assert match.company_approved == True
+

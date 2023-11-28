@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 
 from app.crud import crud_company
 from app.crud.crud_company import CRUDCompany
-from app.db.models import DbCompanies, DbUsers, DbInfo, DbAds
+from app.db.models import DbCompanies, DbUsers, DbInfo, DbAds, DbProfessionals, DbJobsMatches
 from app.schemas.company import CompanyInfoCreate
 
 
@@ -26,15 +26,47 @@ async def create_dummy_company() -> tuple[DbUsers, DbCompanies]:
     return user, company
 
 
-async def create_dummy_ad() -> DbInfo:
+async def create_dummy_professional() -> tuple[DbUsers, DbProfessionals]:
+    user = DbUsers(
+        id='dummyId2',
+        username='dummyUsername2',
+        password='dummyPassword2',
+        email='dummyEmail2',
+        type='professional',
+        is_verified=True
+    )
+    professional = DbProfessionals(
+        id='dummyProfId',
+        first_name='dummyFirstName',
+        last_name='dummyLastName',
+        user_id=user.id
+    )
+    return user, professional
+
+
+async def create_dummy_ad() -> DbAds:
     ad = DbAds(
         id='dummyAdId',
         description='dummyDescription',
         location='dummyLocation',
-        status='active',
+        status='Active',
         min_salary=200,
         max_salary=300,
         info_id='dummyInfoId'
+    )
+    return ad
+
+
+async def create_prof_ad():
+    ad = DbAds(
+        id='dummyAdId2',
+        description='dummyDescription',
+        location='dummyLocation',
+        status='Active',
+        min_salary=200,
+        max_salary=300,
+        info_id='dummyInfoId',
+        is_resume=True,
     )
     return ad
 
@@ -48,10 +80,41 @@ async def create_info() -> DbInfo:
     return info
 
 
+async def create_prof_info() -> DbInfo:
+    info = DbInfo(
+        id='dummyProfInfoId',
+        description='dummyDescription',
+        location='dummyLocation'
+    )
+    return info
+
+
 info_schema = CompanyInfoCreate(
     description='dummyDescription',
     location='dummyLocation'
 )
+
+
+async def fill_match_db(db):
+    company_user, company = await create_dummy_company()
+    prof_user, prof = await create_dummy_professional()
+    company_info = await create_info()
+    prof_info = await create_prof_info()
+    prof.info_id = prof_info.id
+    company.info_id = company_info.id
+    company_ad = await create_dummy_ad()
+    prof_ad = await create_prof_ad()
+    company_ad.info_id = company_info.id
+    prof_ad.info_id = prof_info.id
+    db.add(company_info)
+    db.add(prof_info)
+    db.add(company_user)
+    db.add(company)
+    db.add(prof_user)
+    db.add(prof)
+    db.add(company_ad)
+    db.add(prof_ad)
+    db.commit()
 
 
 @pytest.mark.asyncio
@@ -328,3 +391,95 @@ async def test_getimage(db, test_db):
 
     exception_info = exception.value
     assert exception_info.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_find_matches(db, test_db, mocker):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+    mocker.patch('app.crud.crud_company.calculate_similarity', return_value=True)
+
+    # Testing with no matching skills
+    result = await CRUDCompany.find_matches(db, company, 'dummyAdId', 0.0)
+
+    assert result.body == b'{"message":"You have new matches!"}'
+
+    # Testing when match is already added
+    result = await CRUDCompany.find_matches(db, company, 'dummyAdId', 0.0)
+
+    assert result.body == b'{"message":"You have no matches!"}'
+
+    # Testing with invalid ad id
+
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.find_matches(db, company, 'invalidId', 0.0)
+
+    exception_info = exception.value
+    assert exception_info.status_code == 404
+
+    # Testing with no company info
+    company.info_id = None
+    db.commit()
+
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.find_matches(db, company, 'dummyAdId', 0.0)
+
+        exception_info = exception.value
+        assert exception_info.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_matches_multi(db, test_db):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+
+    result = await CRUDCompany.get_matches_multi(db, company)
+
+    assert result == []
+
+    # Testing with JobMatches entry
+    prof = db.query(DbProfessionals).first()
+    company_ad = db.query(DbAds).filter(DbAds.is_resume == False).first()
+    prof_ad = db.query(DbAds).filter(DbAds.is_resume == True).first()
+    match = DbJobsMatches(
+        ad_id=company_ad.id,
+        resume_id=prof_ad.id,
+        company_id=company.id,
+        professional_id=prof.id
+    )
+    db.add(match)
+    db.commit()
+
+    result = await CRUDCompany.get_matches_multi(db, company)
+
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_approve_match(db, test_db):
+    await fill_match_db(db)
+    company = db.query(DbCompanies).first()
+    prof = db.query(DbProfessionals).first()
+    company_ad = db.query(DbAds).filter(DbAds.is_resume == False).first()
+    prof_ad = db.query(DbAds).filter(DbAds.is_resume == True).first()
+    match = DbJobsMatches(
+        ad_id=company_ad.id,
+        resume_id=prof_ad.id,
+        company_id=company.id,
+        professional_id=prof.id
+    )
+    db.add(match)
+    db.commit()
+
+    with pytest.raises(HTTPException) as exception:
+        await CRUDCompany.approve_match(db, 'invalidId', 'invalidId')
+
+        exception_info = exception.value
+        assert exception_info.status_code == 404
+
+    # Testing with valid ids
+
+    result = await CRUDCompany.approve_match(db, prof_ad.id, company.id)
+
+    assert result.body == b'{"message":"Match approved!"}'
+    assert match.company_approved == True

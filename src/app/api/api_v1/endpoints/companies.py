@@ -1,7 +1,7 @@
-from typing import Annotated, List, Union
+from typing import Annotated, List
 
 from fastapi import Depends, APIRouter, HTTPException, status, Query, Path, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -21,10 +21,15 @@ async def create_company(schema: company.CompanyCreate, db: Annotated[Session, D
 
     This endpoint allows the creation of a new company using the provided company creation schema.
 
-    :param schema:The schema containing information for creating the company.
-    :param db:The database session dependency.
-    :return:Information about the created company.
-    :raises HTTPException 400: If there are validation errors in the provided schema.
+    Parameters:
+    - **schema** (CompanyCreate): The schema containing information for creating the company.
+    - **db** (Session): The database session dependency.
+
+    Returns:
+    - Information about the created company.
+
+    Raises:
+    - HTTPException 400: If there are validation errors in the provided schema.
     """
     return await create_user(db, schema)
 
@@ -39,12 +44,17 @@ async def get_companies(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows fetching a list of companies based on optional search parameters.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param name: Optional parameter for filtering companies by name.
-    :param page:Optional parameter for specifying the page number (default is 1).
-    :return:A list of company displays containing information about each company.
-    :raises HTTPException 401: If the user is not authenticated.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **name**: Optional parameter for filtering companies by name.
+    - **page**: Optional parameter for specifying the page number (default is 1).
+
+    Returns:
+    - A list of company displays containing information about each company.
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
     """
     companies = await CRUDCompany.get_multi(db, name, page)
     return companies
@@ -58,10 +68,15 @@ async def get_company_by_id(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows fetching details of a specific company based on its unique identifier.
 
-    :param db:The database session dependency.
-    :param company_id:The unique identifier of the company.
-    :return:Information about the specified company.
-    :raises HTTPException 404: If no company is found with the provided company_id.
+    Parameters:
+    - **db**: The database session dependency.
+    - **company_id**: The unique identifier of the company.
+
+    Returns:
+    - Information about the specified company.
+
+    Raises:
+    - HTTPException 404: If no company is found with the provided company_id.
     """
     return await CRUDCompany.get_by_id(db, company_id)
 
@@ -76,13 +91,18 @@ async def update_company(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows updating information for the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param name:Optional parameter for updating the company name.
-    :param contact:Optional parameter for updating the company contact information.
-    :return:Information about the updated company.
-    :raises HTTPException 401: If the user is not authenticated.
-    :raises HTTPException 403: If the user's account is not verified.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **name**: Optional parameter for updating the company name.
+    - **contact**: Optional parameter for updating the company contact information.
+
+    Returns:
+    - Information about the updated company.
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
+    - HTTPException 403: If the user's account is not verified.
     """
     if not current_user.is_verified:
         raise HTTPException(
@@ -103,11 +123,16 @@ async def delete_company(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows deleting a specific company based on its unique identifier.
 
-    :param db:The database session dependency.
-    :param company_id:The unique identifier of the company to be deleted.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :return:None
-    :raises HTTPException 401: If the user is not authenticated.
+    Parameters:
+    - **db**: The database session dependency.
+    - **company_id**: The unique identifier of the company to be deleted.
+    - **current_user**: Details about the current user obtained from the authentication token.
+
+    Returns:
+    - None
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
     """
     return await CRUDCompany.delete_by_id(db, company_id, current_user)
 
@@ -122,12 +147,17 @@ async def create_company_info(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows creating additional information for the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param schema:The schema containing information for creating company information.
-    :return:Information about the created company info.
-    :raises HTTPException 401: If the user is not authenticated.
-    :raises HTTPException 403: If the user's account is not verified.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **schema**: The schema containing information for creating company information.
+
+    Returns:
+    - Information about the created company info.
+
+    Raises
+    - HTTPException 401: If the user is not authenticated.
+    - HTTPException 403: If the user's account is not verified.
     """
     if not current_user.is_verified:
         raise HTTPException(
@@ -148,11 +178,16 @@ async def upload(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows uploading an image for the company info associated with the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param image:The uploaded image file.
-    :return:A streaming response for the uploaded image.
-    :raises HTTPException 401: If the user is not authenticated.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **image**: The uploaded image file.
+
+    Returns:
+    - A streaming response for the uploaded image.
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
     """
     f = await image.read()
     b = bytearray(f)
@@ -167,10 +202,15 @@ async def get_image(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows fetching the image associated with the company information of the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :return:A streaming response for the company information image.
-    :raises HTTPException 401: If the user is not authenticated.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+
+    Returns:
+    - A streaming response for the company information image.
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
     """
     return await CRUDCompany.get_image(db, current_user.company[0].info_id)
 
@@ -183,11 +223,17 @@ async def get_company_info(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows fetching additional information about the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :return:Information about the company.
-    :raises HTTPException 403: If the user's account is not verified.
-    :raises HTTPException 401: If the user is not authenticated.
+
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+
+    Returns:
+    - Information about the company.
+
+    Raises:
+    - HTTPException 403: If the user's account is not verified.
+    - HTTPException 401: If the user is not authenticated.
     """
     if not current_user.is_verified:
         raise HTTPException(
@@ -210,13 +256,18 @@ async def update_info(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows updating the additional information for the authenticated user's company.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param description:Optional parameter for updating the company information description.
-    :param location:Optional parameter for updating the company information location.
-    :return:Information about the updated company info.
-    :raises HTTPException 401: If the user is not authenticated.
-    :raises HTTPException 403: If the user's account is not verified.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **description**: Optional parameter for updating the company information description.
+    - **location**: Optional parameter for updating the company information location.
+
+    Returns:
+    - Information about the updated company info.
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
+    - HTTPException 403: If the user's account is not verified.
     """
     if not current_user.is_verified:
         raise HTTPException(
@@ -237,10 +288,81 @@ async def delete_info(db: Annotated[Session, Depends(get_db)],
 
     This endpoint allows deleting the info for the authenticated user's company based on its unique identifier.
 
-    :param db:The database session dependency.
-    :param current_user:Details about the current user obtained from the authentication token.
-    :param info_id:The unique identifier of the company information to be deleted.
-    :return:None
-    :raises HTTPException 401: If the user is not authenticated.
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **info_id**: The unique identifier of the company information to be deleted.
+
+    Returns:
+    - None
+
+    Raises:
+    - HTTPException 401: If the user is not authenticated.
     """
     return await CRUDCompany.delete_info_by_id(db, info_id, current_user)
+
+
+@router.post('/companies/match')
+async def search_for_matches(db: Annotated[Session, Depends(get_db)],
+                             current_user: Annotated[DbUsers, Depends(get_current_user)],
+                             ad_id: Annotated[str, Query(description='Mandatory company ad id parameter.')],
+                             threshold: Annotated[float, Query(description="Percentage for adjusting salary range",
+                                                               ge=0, le=100)] = 0) -> JSONResponse:
+    """
+    Search for matches between a company's ad and professionals' resume.
+
+    This endpoint allows a company to search for matches between their job advertisement and professionals' resume.
+    The search is based on the provided ad_id and an optional threshold for adjusting the salary range.
+
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **ad_id**: Mandatory parameter representing the unique identifier of the company's job advertisement.
+    - **threshold**: Optional parameter representing the percentage for adjusting the salary range. Should be
+                     between 0 and 100.
+
+    Returns:
+    - A JSON response containing information about search result.
+    """
+    threshold = round(threshold / 100, 2)
+    return await CRUDCompany.find_matches(db, current_user.company[0], ad_id, threshold)
+
+
+@router.get('/companies/match/')
+async def get_matches(db: Annotated[Session, Depends(get_db)],
+                      current_user: Annotated[DbUsers, Depends(get_current_user)]) -> list[company.CompanyMatchDisplay]:
+    """
+    Retrieve matches for a company's job advertisements.
+
+    This endpoint allows a company to retrieve matches for their job advertisements.
+    The matches are based on the current user's company and its associated job advertisements.
+
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+
+    Returns:
+    - **list[CompanyMatchDisplay]**: A list of company match displays containing information about the matches.
+    """
+    return await CRUDCompany.get_matches_multi(db, current_user.company[0])
+
+
+@router.patch('/companies/match')
+async def approve_match(db: Annotated[Session, Depends(get_db)],
+                        current_user: Annotated[DbUsers, Depends(get_current_user)],
+                        resume_id: Annotated[str, Query(description='Mandatory professional ad id')]) -> JSONResponse:
+    """
+    Approve a match between a company and a professional.
+
+    This endpoint allows a company to approve a match between their job advertisement and a professionals' resume.
+    The approval is based on the provided resume_id.
+
+    Parameters:
+    - **db**: The database session dependency.
+    - **current_user**: Details about the current user obtained from the authentication token.
+    - **resume_id**: Mandatory parameter representing the unique identifier of the professional resume.
+
+    Returns:
+    - A JSON response containing information about the approval.
+    """
+    return await CRUDCompany.approve_match(db, resume_id, current_user.company[0].id)
