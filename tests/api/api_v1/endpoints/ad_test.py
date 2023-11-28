@@ -346,7 +346,7 @@ async def test_delete_skill(client: TestClient, test_db, db, mocker):
 
 
 @pytest.mark.asyncio
-async def test_add_and_remove_skill_to_ad(client: TestClient, test_db, db, mocker):
+async def test_add_and_remove_ad_skill(client: TestClient, test_db, db, mocker):
     user, professional = await create_professional(db)
 
     info = await create_info(db)
