@@ -32,3 +32,18 @@ class CompanyInfoDisplay(CompanyInfoCreate):
     id: str
     active_job_ads: int
     number_of_matches: int
+
+
+class AdDisplay(BaseModel):
+    id: str
+    description: str
+    location: str
+    min_salary: int
+    max_salary: int
+
+
+class CompanyMatchDisplay(BaseModel):
+    company_name: str
+    job_ad: AdDisplay
+    professional_name: str
+    resume: AdDisplay
