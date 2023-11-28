@@ -8,7 +8,7 @@ import app.crud.crud_professional as crud_professional
 from app.crud.crud_user import create_user
 from app.db.database import get_db
 from app.db.models import DbProfessionals, DbUsers
-from app.schemas.professional import ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay, ProfessionalInfoDisplay, ProfessionalStatus
+from app.schemas.professional import ProfessionalAdMatchDisplay, ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay, ProfessionalInfoDisplay, ProfessionalStatus
 from app.schemas.user import UserDisplay
 
 router = APIRouter()
@@ -255,6 +255,76 @@ async def delete_professional_profile(db: Annotated[Session, Depends(get_db)],
     HTTPException: If the user is not verified or if there's an issue deleting the professional profile.
     """
     return await crud_professional.delete_professional_by_id(db, professional_id)
+
+
+@router.get('/professionals/matches-search')
+async def search_for_match(db: Annotated[Session, Depends(get_db)],
+                               current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
+                               threshold: float = Query(0, title="Threshold Percentage", description="Percentage for adjusting salary range", ge=0, le=100)):
+    """
+    Get matches for a professional based on specified threshold.
+
+    Parameters:
+    - `db`: SQLAlchemy database session dependency.
+    - `current_user`: Current authenticated user (DbUsers).
+    - `threshold` (float): Percentage for adjusting salary range (between 0 and 100).
+
+    Returns:
+    - A list of matches for the professional based on the specified threshold.
+
+    Raises:
+    - HTTPException 400: If the threshold is not within the valid range (0 to 100).
+    """
+    result = round(threshold / 100, 2)
+    return await crud_professional.find_matches(db, current_user, result)
+
+
+@router.get('/professionals/matches-all', response_model=list[ProfessionalAdMatchDisplay])
+async def get_all_matches(db: Annotated[Session, Depends(get_db)],
+                               current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)]):
+    """
+    Retrieve a list of all matches for the authenticated professional.
+
+    Parameters:
+    - `db`: SQLAlchemy database session dependency.
+    - `current_user`: Current authenticated user (DbUsers).
+
+    Returns:
+    - A list of ProfessionalAdMatchDisplay instances representing all matches.
+    """
+    return await crud_professional.get_matches(db, current_user)
+
+
+@router.patch('/professionals/matches-approve')
+async def approve_match(db: Annotated[Session, Depends(get_db)],
+                               current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
+                               ad_id: Annotated[str, Query(title="Ad id", description="Looking for a match by ad id for approval")]):
+    """
+    Approve a match for a professional based on the provided ad_id.
+
+    Parameters:
+    - db (Session): The database session dependency.
+    - current_user (DbUsers): The current authenticated user, verified as a professional.
+    - ad_id (str): The id of the advertisement for which a match is to be approved.
+
+    Returns:
+    - The result of approving the match, typically a success message or status.
+
+    Raises:
+    - HTTPException(400): If the ad_id is not valid or if there is an issue with the approval process.
+    - HTTPException(401): If the user is not verified as a professional.
+    - HTTPException(404): If the specified advertisement id is not found.
+    """
+    return await crud_professional.approve_match_by_ad_id(db, current_user, ad_id)
+
+
+    
+
+
+
+
+
+
 
 
 
