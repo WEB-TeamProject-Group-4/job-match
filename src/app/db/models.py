@@ -18,9 +18,11 @@ adds_skills = Table(
 class DbJobsMatches(Base):
     __tablename__: str = 'jobs_matches'
     ad_id = Column(String(50), ForeignKey('ads.id'), primary_key=True, nullable=False)
+    resume_id = Column(String(50), nullable=False)
     professional_id = Column(String(50), ForeignKey('professionals.id'), primary_key=True, nullable=False)
     company_id = Column(String(50), ForeignKey('companies.id'), primary_key=True, nullable=False)
-    approved = Column(Boolean)
+    company_approved = Column(Boolean, default=False)
+    professional_approved = Column(Boolean, default=False)
     professional = relationship('DbProfessionals', back_populates='match')
     company = relationship('DbCompanies', back_populates='match')
     ad = relationship('DbAds', back_populates='match')
