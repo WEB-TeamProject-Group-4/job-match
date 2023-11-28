@@ -454,17 +454,9 @@ async def test_find_matches_error404matches(db, mocker,test_db, filling_test_db,
         max_salary=2000, is_resume=0, is_deleted=False, info_id='test-info-company'
     )
     db.add(job_ad)
-
-    job_match = DbJobsMatches(
-        ad_id='test-company-ad-id',
-        resume_id='test-resume-id-1',
-        professional_id='professional-id-one',
-        company_id='test-company-id'
-    )
-    db.add(job_match)
-
     db.commit()
     mocker.patch('app.crud.crud_professional.calculate_similarity', return_value=True)
+    await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-1')
 
     with pytest.raises(HTTPException) as exception:
         await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-1')
