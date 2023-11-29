@@ -33,19 +33,14 @@ async def create_ad_crud(db: Session, current_user: DbUsers, schema: AdCreate) -
         info_id=user_info,
         is_resume=is_resume)
 
-    try:
-        db.add(new_ad)
-        db.commit()
-    except IntegrityError as err:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
-    else:
-        db.refresh(new_ad)
-        return new_ad
+    db.add(new_ad)
+    db.commit()
+
+    return new_ad
 
 
 async def get_resumes_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
-                           ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
+                           ad_status: Optional[ResumeStatus] = None, min_salary: Optional[int] = None,
                            max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
     query = db.query(DbAds).filter(DbAds.is_resume == True, DbAds.is_deleted == False)
     query = await filter_ads(query, description, location, ad_status, min_salary, max_salary)
@@ -181,15 +176,11 @@ async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: 
 
     ad_skill = adds_skills.insert().values(ad_id=ad.id, skill_id=skill.id, level=level.value)
 
-    try:
-        db.execute(ad_skill)
-        db.commit()
-        return AddSkillToAdDisplay(
-            skill_name=skill.name,
-            level=level)
-    except IntegrityError as err:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
+    db.execute(ad_skill)
+    db.commit()
+    return AddSkillToAdDisplay(
+        skill_name=skill.name,
+        level=level)
 
 
 async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) -> None:
@@ -205,16 +196,12 @@ async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) ->
     if not skill_to_remove:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"'{skill_name}' does not exist in this ad")
 
-    try:
-        db.execute(
-            adds_skills.delete().where(
-                adds_skills.c.ad_id == ad_id,
-                adds_skills.c.skill_id == skill.id))
-        db.commit()
-        return
-    except IntegrityError as err:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(err.args))
+    db.execute(
+        adds_skills.delete().where(
+            adds_skills.c.ad_id == ad_id,
+            adds_skills.c.skill_id == skill.id))
+    db.commit()
+    return
 
 
 async def filter_ads(query, description=None, location=None, ad_status=None, min_salary=None, max_salary=None):
