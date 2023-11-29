@@ -1,11 +1,10 @@
 import pytest
-import io
 
 from fastapi import HTTPException
 from app.crud import crud_professional
 
-from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
-from app.schemas.professional import ProfessionalInfoDisplay
+from app.db.models import DbAds, DbCompanies, DbInfo, DbJobsMatches, DbProfessionals, DbUsers
+from app.schemas.professional import ProfessionalAdMatchDisplay, ProfessionalInfoDisplay
 
 
 @pytest.fixture
@@ -31,7 +30,9 @@ def  filling_info_test_db(db, test_db):
 
 @pytest.fixture
 def  filling_resume_test_db(db, test_db):
-    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
+    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1',
+                    location='Test First Location', status='Active', min_salary=1000, max_salary=2000,
+                    is_resume=1, is_deleted=False, info_id='test-info-id')
     db.add(resume_1)
     db.commit()
 
@@ -319,20 +320,20 @@ async def test_delete_profile(db, mocker, test_db, filling_test_db, filling_info
 
 
 @pytest.mark.asyncio
-async def test_upload_picture_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
+async def test_upload_picture_success(db, test_db, filling_test_db, filling_info_test_db):
     info: DbInfo = filling_info_test_db
     test_image_content = b'Test image content'
     test_image = bytearray(test_image_content)
 
-    response = await crud_professional.upload_picture(db, info.id, test_image)
+    result = await crud_professional.upload_picture(db, info.id, test_image)
     updated_info: DbInfo = (db.query(DbInfo).filter(DbInfo.id == 'test-info-id').first())
 
-    assert response["message"] == 'Image uploaded successfully'
+    assert result["message"] == 'Image uploaded successfully'
     assert updated_info.picture is not None
 
 
 @pytest.mark.asyncio
-async def test_upload_picture_raise404(db, mocker, test_db, filling_test_db):
+async def test_upload_picture_raise404(db, test_db, filling_test_db):
     info_id = 'wrong-info-id'
     test_image_content = b'Test image content'
     test_image = bytearray(test_image_content)
@@ -345,7 +346,7 @@ async def test_upload_picture_raise404(db, mocker, test_db, filling_test_db):
 
 
 @pytest.mark.asyncio
-async def test_upload_picture_raise400(db, mocker, test_db, filling_test_db, filling_info_test_db):
+async def test_upload_picture_raise400(db, test_db, filling_test_db, filling_info_test_db):
     info: DbInfo = filling_info_test_db
     test_large_image_content = b'A' * (crud_professional.MAX_IMAGE_SIZE_BYTES + 1)
     test_large_image = bytearray(test_large_image_content)
@@ -358,7 +359,7 @@ async def test_upload_picture_raise400(db, mocker, test_db, filling_test_db, fil
 
 
 @pytest.mark.asyncio
-async def test_get_image_success(db, mocker, test_db, filling_test_db, filling_info_test_db):
+async def test_get_image_success(db, test_db, filling_test_db, filling_info_test_db):
     info: DbInfo = filling_info_test_db
     test_image_content = b'Test image content'
     test_image = bytearray(test_image_content)
@@ -373,7 +374,7 @@ async def test_get_image_success(db, mocker, test_db, filling_test_db, filling_i
 
 
 @pytest.mark.asyncio
-async def test_get_image_raise404(db, mocker, test_db, filling_test_db):
+async def test_get_image_raise404(db, test_db, filling_test_db):
     info_id = 'wrong-info-id'
 
     with pytest.raises(HTTPException) as exception:
@@ -381,6 +382,177 @@ async def test_get_image_raise404(db, mocker, test_db, filling_test_db):
     
     assert exception.value.status_code == 404
     assert exception.value.detail == 'Please edit your personal information.'
+
+
+@pytest.mark.asyncio
+async def test_find_matches_success(db, mocker, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
+    user, _ = filling_test_db
+    user_company = DbUsers(
+        id='company-user-id', username='company_user', password='company-password', email='company@email.com', type='company',
+        is_verified=1, is_deleted=False
+    )
+    db.add(user_company)
+    company = DbCompanies(
+        id='test-company-id', name='test Company', contacts='contacts', user_id='company-user-id',
+        is_deleted=False, info_id='test-info-company'
+    )
+    db.add(company)
+    company_info = DbInfo(
+        id='test-info-company', description='test info company', location='Test Location',
+        picture=None, main_ad=None, is_deleted=False
+    )
+    db.add(company_info)
+
+    job_ad = DbAds(
+        id='test-company-ad-id', description='company ad description', location='Test First Location', status='Active', min_salary=1000,
+        max_salary=2000, is_resume=0, is_deleted=False, info_id='test-info-company'
+    )
+
+    db.add(job_ad)
+    db.commit()
+    mocker.patch('app.crud.crud_professional.calculate_similarity', return_value=True)
+
+    result = await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-1')
+    matches: DbJobsMatches = db.query(DbJobsMatches).all()
+
+    assert result['message'] == 'You have new matches!'
+    assert len(matches) == 1
+
+
+@pytest.mark.asyncio
+async def test_find_matches_error404Resume(db, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
+    user, _ = filling_test_db
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-2')
+    
+    assert exception.value.status_code == 404
+    assert exception.value.detail == 'There is no resume with id: test-resume-id-2'
+
+
+@pytest.mark.asyncio
+async def test_find_matches_error404matches(db, mocker,test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
+    user, _ = filling_test_db
+    user_company = DbUsers(
+        id='company-user-id', username='company_user', password='company-password', email='company@email.com', type='company',
+        is_verified=1, is_deleted=False
+    )
+    db.add(user_company)
+    company = DbCompanies(
+        id='test-company-id', name='test Company', contacts='contacts', user_id='company-user-id',
+        is_deleted=False, info_id='test-info-company'
+    )
+    db.add(company)
+    company_info = DbInfo(
+        id='test-info-company', description='test info company', location='Test Location',
+        picture=None, main_ad=None, is_deleted=False
+    )
+    db.add(company_info)
+
+    job_ad = DbAds(
+        id='test-company-ad-id', description='company ad description', location='Test First Location', status='Active', min_salary=1000,
+        max_salary=2000, is_resume=0, is_deleted=False, info_id='test-info-company'
+    )
+    db.add(job_ad)
+    db.commit()
+    mocker.patch('app.crud.crud_professional.calculate_similarity', return_value=True)
+    await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-1')
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.find_matches(db, user, threshold=0, ad_id='test-resume-id-1')
+
+    matches:DbJobsMatches = db.query(DbJobsMatches).all()
+    assert exception.value.status_code == 404
+    assert exception.value.detail == 'You have no new matches'
+    assert len(matches) == 1
+
+
+def test_calculate_similarity_returnsTrue(mocker):
+    resume_skills = ["test-skills-1", "test-skills-2", "test-skills-3", "test-skills-4"]
+    ad_skills = ["test-skills-1", "test-skills-2", "test-skills-3", "test-skills-4", "test-skills-5"]
+
+    result = crud_professional.calculate_similarity(set(resume_skills), set(ad_skills), threshold=0.2)
+
+    assert result == True
+
+
+def test_calculate_similarity_returnsZeroDivision(mocker):
+    resume_skills = []
+    ad_skills = []
+
+    result = crud_professional.calculate_similarity(set(resume_skills), set(ad_skills), threshold=0.2)
+
+    assert result == 0
+
+
+@pytest.mark.asyncio
+async def test_get_potential_matches(db, test_db, filling_test_db, filling_resume_test_db):
+    user, _ = filling_test_db
+    job_match = DbJobsMatches(
+        ad_id='test-resume-id-1',
+        resume_id='test-cv-id-1',
+        professional_id='professional-id-one',
+        company_id='test-company-id-1',
+        professional_approved=False,
+        is_deleted=False
+    )
+    db.add(job_match)
+    db.commit()
+
+    result = await crud_professional.get_potential_matches(db, user)
+
+    assert result == [
+        ProfessionalAdMatchDisplay(
+            ad_id='test-resume-id-1', 
+            description='test-resume-description-1', 
+            location='Test First Location',
+            status='Active', 
+            min_salary=1000, 
+            max_salary=2000, 
+            company_approved=False, 
+            professional_approved=False)]
+
+
+@pytest.mark.asyncio
+async def test_approve_match_by_ad_id_success(db, test_db, filling_test_db, filling_resume_test_db):
+    user, _ = filling_test_db
+    job_match = DbJobsMatches(
+        ad_id='test-resume-id-1',
+        resume_id='test-cv-id-1',
+        professional_id='professional-id-one',
+        company_id='test-company-id-1',
+        professional_approved=False,
+        is_deleted=False
+    )
+    db.add(job_match)
+    db.commit()
+
+    result = await crud_professional.approve_match_by_ad_id(db, user, ad_id='test-resume-id-1')
+
+    approved_match: DbJobsMatches = db.query(DbJobsMatches).filter(DbJobsMatches.ad_id == 'test-resume-id-1').first()
+    assert result['message'] == 'Match approved!'
+    assert approved_match.professional_approved == True
+
+
+@pytest.mark.asyncio
+async def test_approve_match_by_ad_id_error404(db, test_db, filling_test_db):
+    user, _ = filling_test_db
+    job_match = DbJobsMatches(
+        ad_id='test-resume-id-1',
+        resume_id='test-cv-id-1',
+        professional_id='professional-id-one',
+        company_id='test-company-id-1',
+        professional_approved=False,
+        is_deleted=False
+    )
+    db.add(job_match)
+    db.commit()
+
+    with pytest.raises(HTTPException) as exception:
+        await crud_professional.approve_match_by_ad_id(db, user, ad_id='test-resume-id-2')
+
+    assert exception.value.status_code == 404
+    assert exception.value.detail == 'There is no ad with ID:test-resume-id-2'
 
 
 

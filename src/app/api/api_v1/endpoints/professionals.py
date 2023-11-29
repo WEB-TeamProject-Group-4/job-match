@@ -259,8 +259,9 @@ async def delete_professional_profile(db: Annotated[Session, Depends(get_db)],
 
 @router.get('/professionals/matches-search')
 async def search_for_match(db: Annotated[Session, Depends(get_db)],
-                               current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
-                               threshold: float = Query(0, title="Threshold Percentage", description="Percentage for adjusting salary range", ge=0, le=100)):
+                            current_user: Annotated[DbUsers, Depends(crud_professional.is_user_verified)],
+                            ad_id: Annotated[str, Query(title='Active ad id')],
+                            threshold: float = Query(0, title="Threshold Percentage", description="Percentage for adjusting salary range", ge=0, le=100)):
     """
     Get matches for a professional based on specified threshold.
 
@@ -276,7 +277,7 @@ async def search_for_match(db: Annotated[Session, Depends(get_db)],
     - HTTPException 400: If the threshold is not within the valid range (0 to 100).
     """
     result = round(threshold / 100, 2)
-    return await crud_professional.find_matches(db, current_user, result)
+    return await crud_professional.find_matches(db, current_user, result, ad_id)
 
 
 @router.get('/professionals/matches-all', response_model=list[ProfessionalAdMatchDisplay])
@@ -292,7 +293,7 @@ async def get_all_matches(db: Annotated[Session, Depends(get_db)],
     Returns:
     - A list of ProfessionalAdMatchDisplay instances representing all matches.
     """
-    return await crud_professional.get_matches(db, current_user)
+    return await crud_professional.get_potential_matches(db, current_user)
 
 
 @router.patch('/professionals/matches-approve')

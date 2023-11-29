@@ -4,7 +4,7 @@ import io
 
 from fastapi.testclient import TestClient
 
-from app.db.models import DbAds, DbInfo, DbProfessionals, DbUsers
+from app.db.models import DbAds, DbCompanies, DbInfo, DbJobsMatches, DbProfessionals, DbSkills, DbUsers
 from app.core.security import SECRET_KEY
 from app.schemas.professional import ProfessionalCreateDisplay
 
@@ -27,7 +27,7 @@ def create_professional() -> ProfessionalCreateDisplay:
 def fill_test_db(test_db, db):
     user = DbUsers(id='test-id-one', username='User3', password='password123', email='test3@example.com', type='professional', is_verified = 1)
     db.add(user) 
-    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='active', user_id='test-id-one', info_id='test-info-id')
+    professional = DbProfessionals(id='professional-id-one', first_name='Prof1', last_name='Last1', status='Active', user_id='test-id-one', info_id='test-info-id')
     db.add(professional)
     db.commit()
 
@@ -45,11 +45,30 @@ def fill_info_test_db(test_db, db):
 
 @pytest.fixture
 def fill_resume_test_db(test_db, db):
-    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', location='Test First Location', status='active', min_salary=1000, max_salary=2000, info_id='test-info-id')
+    resume_1 = DbAds(id='test-resume-id-1', description='test-resume-description-1', 
+                     location='Test First Location', status='Active', min_salary=1000, max_salary=2000, 
+                     is_resume = 1, is_deleted = False, info_id='test-info-id')
     db.add(resume_1)
     db.commit()
 
     return resume_1
+
+
+
+@pytest.fixture
+def fill_jobs_matches_test_db(test_db, db):
+    job_match = DbJobsMatches(
+        ad_id='test-resume-id-1',
+        resume_id='test-cv-id-1',
+        professional_id='professional-id-one',
+        company_id='test-company-id-1',
+        professional_approved=False,
+        is_deleted=False
+    )
+    db.add(job_match)
+    db.commit()
+
+    return job_match
 
 
 def test_create_professional_success(client: TestClient, test_db, mocker):
@@ -190,7 +209,7 @@ async def test_get_professional_info(client: TestClient, test_db, db, mocker, fi
         "last_name": "Last1",
         "summary": "test-description",
         "location": "Test Location",
-        "status": "active",
+        "status": "Active",
         "active_resumes": 0
     }
 
@@ -319,6 +338,86 @@ async def test_upload(client: TestClient, test_db, db, mocker, fill_test_db, fil
 
     assert updated_info.picture is not None
 
+    
+@pytest.mark.asyncio
+async def test_approve_match(client: TestClient, test_db, db, mocker, fill_test_db, fill_jobs_matches_test_db):
+    user, professional = fill_test_db
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+
+    client.patch(f'/professionals/matches-approve', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                 params={'ad_id': 'test-resume-id-1'})
+    approved_ad: DbJobsMatches = (db.query(DbJobsMatches).filter(DbJobsMatches.ad_id == 'test-resume-id-1').first())
+
+    assert approved_ad.professional_approved == True
+
+
+@pytest.mark.asyncio
+async def test_get_all_matches(client: TestClient, test_db, db, mocker, fill_test_db, fill_resume_test_db, fill_jobs_matches_test_db):
+    user, professional = fill_test_db
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+
+    response = client.get(f'/professionals/matches-all', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data == [
+            {'ad_id': 'test-resume-id-1', 
+             'description': 'test-resume-description-1',
+             'location': 'Test First Location',
+             'status': 'Active',
+             'min_salary': 1000,
+             'max_salary': 2000,
+             'company_approved': False, 
+             'professional_approved': False
+        }
+    ]
+
+@pytest.mark.asyncio
+async def test_search_for_matches(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
+    user, professional = fill_test_db
+    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+    mocker.patch('app.crud.crud_professional.calculate_similarity', return_value=True)
+    user_company = DbUsers(
+        id='company-user-id', username='company_user', password='company-password', email='company@email.com', type='company',
+        is_verified=1, is_deleted=False
+    )
+    db.add(user_company)
+    company = DbCompanies(
+        id='test-company-id', name='test Company', contacts='contacts', user_id='company-user-id',
+        is_deleted=False, info_id='test-info-company'
+    )
+    db.add(company)
+    company_info = DbInfo(
+        id='test-info-company', description='test info company', location='Test Location',
+        picture=None, main_ad=None, is_deleted=False
+    )
+    db.add(company_info)
+
+    job_ad = DbAds(
+        id='test-company-ad-id', description='company ad description', location='Test First Location', status='Active', min_salary=1000,
+        max_salary=2000, is_resume=0, is_deleted=False, info_id='test-info-company'
+    )
+
+    db.add(job_ad)
+    db.commit()
+
+    response = client.get(f'/professionals/matches-search', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                          params={'ad_id': 'test-resume-id-1', 'threshold': 0})
+    data = response.json()
+
+    matches:DbJobsMatches = (db.query(DbJobsMatches).all())
+    
+    assert response.status_code == 200
+    assert data['message'] == 'You have new matches!'
+    assert len(matches) == 1
+
+ 
+
+    
+    
     
 
 
