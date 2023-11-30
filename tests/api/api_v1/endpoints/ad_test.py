@@ -4,39 +4,54 @@ from fastapi.testclient import TestClient
 
 from app.core.security import SECRET_KEY
 from app.db.models import DbAds, DbProfessionals, DbCompanies, DbInfo, DbUsers, DbSkills
+from app.schemas.ad import ResumeStatus, AdStatusCreate
 
 
 def get_valid_token():
     return jwt.encode({'username': 'dummyUserId'}, SECRET_KEY, algorithm='HS256')
 
 
-async def create_user() -> DbUsers:
-    user = DbUsers(id='dummyUserId',
-                   username='dummyUsername',
-                   password='dummyPassword',
-                   email='dummy@email.com',
-                   type='company',
-                   is_verified=True)
+async def create_user(db) -> DbUsers:
+    user = DbUsers(
+        username='dummyUsername',
+        password='dummyPassword',
+        email='dummy@email.com',
+        type='company',
+        is_verified=True
+    )
+
+    db.add(user)
+    db.commit()
 
     return user
 
 
-async def create_company(db):
-    user = await create_user()
-    db.add(user)
-    company = DbCompanies(id='dummyCompanyId', name='dummyName', user_id=user.id)
+async def create_company(db) -> tuple[DbUsers, DbCompanies]:
+    user = await create_user(db)
+    company = DbCompanies(
+        name='dummyName',
+        user_id=user.id
+    )
+
     db.add(company)
     db.commit()
 
     return user, company
 
 
-async def create_professional(db):
-    user = await create_user()
+async def create_professional(db) -> tuple[DbUsers, DbProfessionals]:
+    user = await create_user(db)
+
     user.type = 'professional'
-    db.add(user)
-    professional = DbProfessionals(id='dummyProfessionalId', first_name='dummyFirstName', last_name='dummyLastName',
-                                   user_id=user.id)
+    user.email = 'prfessional@email.com'
+    user.username = 'professionalUsername'
+
+    professional = DbProfessionals(
+        first_name='dummyFirstName',
+        last_name='dummyLastName',
+        user_id=user.id
+    )
+
     db.add(professional)
     db.commit()
 
@@ -45,27 +60,28 @@ async def create_professional(db):
 
 async def create_info(db) -> DbInfo:
     info = DbInfo(
-        id='dummyInfoId',
         description='dummyDescription',
-        location='dummyLocation'
+        location='dummyLocation',
+        main_ad=None
     )
+
     db.add(info)
     db.commit()
+
     return info
 
 
 async def create_ad(db, info: DbInfo) -> DbAds:
     ad = DbAds(
-        id='dummyAdId',
         description='dummyDescription',
         location='dummyLocation',
-        status='Active',
+        status=AdStatusCreate.ACTIVE,
         min_salary=1500,
         max_salary=2000,
         info_id=info.id,
         is_resume=False,
-        is_deleted=False,
-    )
+        is_deleted=False)
+
     db.add(ad)
     db.commit()
 
@@ -74,6 +90,7 @@ async def create_ad(db, info: DbInfo) -> DbAds:
 
 async def create_skill(db) -> DbSkills:
     skill = DbSkills(name='dummySkill')
+
     db.add(skill)
     db.commit()
 
@@ -103,7 +120,6 @@ async def test_create_ad(client: TestClient, test_db, db, mocker):
     info = await create_info(db)
 
     company.info_id = info.id
-    db.add(company)
     db.commit()
 
     schema = {
@@ -113,6 +129,7 @@ async def test_create_ad(client: TestClient, test_db, db, mocker):
         'min_salary': '1500',
         'max_salary': '3000',
     }
+
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
 
     response = client.post('/ads', headers={"Authorization": f"Bearer {get_valid_token()}"},
@@ -127,9 +144,8 @@ async def test_create_ad(client: TestClient, test_db, db, mocker):
 async def test_get_resumes(client: TestClient, test_db, db, mocker):
     user, company = await create_company(db)
 
-    for ad_data in ad_data_list:
-        ad = DbAds(**ad_data)
-        db.add(ad)
+    ads = [DbAds(**ad) for ad in ad_data_list]
+    db.add_all(ads)
     db.commit()
 
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
@@ -153,9 +169,8 @@ async def test_get_resumes(client: TestClient, test_db, db, mocker):
 async def test_get_job_ads(client: TestClient, test_db, db, mocker):
     user, professional = await create_professional(db)
 
-    for ad_data in ad_data_list:
-        ad = DbAds(**ad_data)
-        db.add(ad)
+    ads = [DbAds(**ad) for ad in ad_data_list]
+    db.add_all(ads)
     db.commit()
 
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
@@ -186,19 +201,18 @@ async def test_update_resumes(client: TestClient, db, test_db, mocker):
 
     ad = await create_ad(db, info)
     ad.is_resume = True  # change status to update resume
-    db.add(ad)
     db.commit()
 
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
 
     response = client.put(f'/ads/professionals/{ad.id}', headers={"Authorization": f"Bearer {get_valid_token()}"},
                           params={'description': 'newDescription', 'location': 'newLocation',
-                                  'status': 'Active', 'min_salary': 1600, 'max_salary': 2100})
+                                  'ad_status': ResumeStatus.MATCHED.value, 'min_salary': 1600, 'max_salary': 2100})
 
     assert response.status_code == 200
     assert response.json().get('description') == 'newDescription'
     assert response.json().get('location') == 'newLocation'
-    assert response.json().get('status') == 'Active'
+    assert response.json().get('status') == 'Matched'
     assert response.json().get('min_salary') == 1600
     assert response.json().get('max_salary') == 2100
 
