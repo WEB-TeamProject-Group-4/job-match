@@ -1,8 +1,7 @@
-from typing import Type, List, Optional, Union, TypeVar
-
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from typing import Type, List, Optional, Union, TypeVar
 
 from app.db.models import DbUsers, DbProfessionals, DbCompanies, DbAds, DbSkills, adds_skills, DbInfo, DbJobsMatches
 from app.schemas.ad import AdCreate, AdSkills, AddSkillToAdDisplay, AdDisplay, ResumeStatus, JobAdStatus, SkillLevel
@@ -42,6 +41,7 @@ async def create_ad_crud(db: Session, current_user: DbUsers, schema: AdCreate) -
 async def get_resumes_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
                            ad_status: Optional[ResumeStatus] = None, min_salary: Optional[int] = None,
                            max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+
     query = db.query(DbAds).filter(DbAds.is_resume == True, DbAds.is_deleted == False)
     query = await filter_ads(query, description, location, ad_status, min_salary, max_salary)
     ads = await paginate(query, page)
@@ -55,6 +55,7 @@ async def get_resumes_crud(db: Session, description: Optional[str] = None, locat
 async def get_job_ads_crud(db: Session, description: Optional[str] = None, location: Optional[str] = None,
                            ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
                            max_salary: Optional[int] = None, page: Optional[int] = 1) -> List[Type[AdDisplay]]:
+
     query = db.query(DbAds).filter(DbAds.is_resume == False, DbAds.is_deleted == False)
     query = await filter_ads(query, description, location, ad_status, min_salary, max_salary)
     ads = await paginate(query, page)
@@ -69,6 +70,7 @@ async def update_resumes_crud(db: Session, current_user: DbUsers, ad_id: str,
                               description: Optional[str] = None, location: Optional[str] = None,
                               ad_status: Optional[ResumeStatus] = None, min_salary: Optional[int] = None,
                               max_salary: Optional[int] = None) -> AdModelType:
+
     ad = await get_ad(db, ad_id)
     if not ad.is_resume:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot update job ads')
@@ -76,6 +78,7 @@ async def update_resumes_crud(db: Session, current_user: DbUsers, ad_id: str,
     professional = await get_professional(db, current_user)
     await check_user_authorization(current_user, professional, ad)
     await update_ad(ad, description, location, ad_status, min_salary, max_salary)
+
     db.commit()
 
     return ad
@@ -85,6 +88,7 @@ async def update_job_ads_crud(db: Session, current_user: DbUsers, ad_id: str,
                               description: Optional[str] = None, location: Optional[str] = None,
                               ad_status: Optional[JobAdStatus] = None, min_salary: Optional[int] = None,
                               max_salary: Optional[int] = None) -> AdModelType:
+
     ad = await get_ad(db, ad_id)
     if ad.is_resume:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot update resumes')
@@ -92,6 +96,7 @@ async def update_job_ads_crud(db: Session, current_user: DbUsers, ad_id: str,
     company = await get_company(db, current_user)
     await check_user_authorization(current_user, company, ad)
     await update_ad(ad, description, location, ad_status, min_salary, max_salary)
+
     db.commit()
 
     return ad
@@ -115,6 +120,7 @@ async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None
 
     await delete_job_matches(db, ad)
     ad.is_deleted = True
+
     db.commit()
 
     return
@@ -123,8 +129,8 @@ async def delete_ad_crud(db: Session, ad_id: str, current_user: DbUsers) -> None
 async def create_new_skill(db: Session, schema: AdSkills) -> DbSkills:
     await new_skill_already_exists(db, schema.name)
     new_skill = DbSkills(name=schema.name)
-
     db.add(new_skill)
+
     db.commit()
     db.refresh(new_skill)
 
@@ -158,6 +164,7 @@ async def delete_skill_crud(db: Session, skill_name: str) -> None:
     skill.is_deleted = True
 
     db.commit()
+
     return
 
 
@@ -178,6 +185,7 @@ async def add_skill_to_ad_crud(db: Session, ad_id: str, skill_name: str, level: 
 
     db.execute(ad_skill)
     db.commit()
+
     return AddSkillToAdDisplay(
         skill_name=skill.name,
         level=level)
@@ -200,7 +208,9 @@ async def remove_skill_from_ad_crud(db: Session, ad_id: str, skill_name: str) ->
         adds_skills.delete().where(
             adds_skills.c.ad_id == ad_id,
             adds_skills.c.skill_id == skill.id))
+
     db.commit()
+
     return
 
 
@@ -265,11 +275,13 @@ async def new_skill_already_exists(db: Session, skill_name: str) -> None:
 
 async def get_professional(db: Session, current_user: DbUsers) -> ProfessionalModelType | None:
     professional = db.query(DbProfessionals).filter(DbProfessionals.user_id == str(current_user.id)).first()
+
     return professional
 
 
 async def get_company(db: Session, current_user: DbUsers) -> CompanyModelType | None:
     company = db.query(DbCompanies).filter(DbCompanies.user_id == str(current_user.id)).first()
+
     return company
 
 

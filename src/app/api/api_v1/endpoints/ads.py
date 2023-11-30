@@ -123,6 +123,7 @@ async def create_skill(db: Annotated[Session, Depends(get_db)],
 async def get_skills(db: Annotated[Session, Depends(get_db)],
                      current_user: Annotated[DbUsers, Depends(get_current_user)],
                      page: Annotated[int, Query(description='Optional page number query parameter', ge=1)] = 1):
+
     skills = await get_skills_crud(db, page)
 
     return skills
@@ -133,6 +134,7 @@ async def update_skill(db: Annotated[Session, Depends(get_db)],
                        current_user: Annotated[DbUsers, Depends(get_current_user)],
                        skill_name: Annotated[str, Query(..., description='Current skill name')],
                        new_name: Annotated[str, Query(..., description='New skill name')]):
+
     skill = await update_skill_crud(db, skill_name, new_name)
 
     return skill
