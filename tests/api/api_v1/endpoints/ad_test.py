@@ -12,12 +12,13 @@ def get_valid_token():
 
 
 async def create_user(db) -> DbUsers:
-    user = DbUsers(id='dummyUserId',
-                   username='dummyUsername',
-                   password='dummyPassword',
-                   email='dummy@email.com',
-                   type='company',
-                   is_verified=True)
+    user = DbUsers(
+        username='dummyUsername',
+        password='dummyPassword',
+        email='dummy@email.com',
+        type='company',
+        is_verified=True
+    )
 
     db.add(user)
     db.commit()
@@ -27,7 +28,10 @@ async def create_user(db) -> DbUsers:
 
 async def create_company(db) -> tuple[DbUsers, DbCompanies]:
     user = await create_user(db)
-    company = DbCompanies(id='dummyCompanyId', name='dummyName', user_id=user.id)
+    company = DbCompanies(
+        name='dummyName',
+        user_id=user.id
+    )
 
     db.add(company)
     db.commit()
@@ -39,8 +43,14 @@ async def create_professional(db) -> tuple[DbUsers, DbProfessionals]:
     user = await create_user(db)
 
     user.type = 'professional'
-    professional = DbProfessionals(id='dummyProfessionalId', first_name='dummyFirstName', last_name='dummyLastName',
-                                   user_id=user.id)
+    user.email = 'prfessional@email.com'
+    user.username = 'professionalUsername'
+
+    professional = DbProfessionals(
+        first_name='dummyFirstName',
+        last_name='dummyLastName',
+        user_id=user.id
+    )
 
     db.add(professional)
     db.commit()
@@ -50,10 +60,10 @@ async def create_professional(db) -> tuple[DbUsers, DbProfessionals]:
 
 async def create_info(db) -> DbInfo:
     info = DbInfo(
-        id='dummyInfoId',
         description='dummyDescription',
         location='dummyLocation',
-        main_ad=None)
+        main_ad=None
+    )
 
     db.add(info)
     db.commit()
@@ -63,7 +73,6 @@ async def create_info(db) -> DbInfo:
 
 async def create_ad(db, info: DbInfo) -> DbAds:
     ad = DbAds(
-        id='dummyAdId',
         description='dummyDescription',
         location='dummyLocation',
         status=AdStatusCreate.ACTIVE,
