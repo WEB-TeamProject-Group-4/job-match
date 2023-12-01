@@ -229,11 +229,11 @@ async def set_main_resume(resume_id: str, db: Annotated[Session, Depends(get_db)
     return await crud_professional.setup_main_resume(resume_id, db, verified_user)
 
 
-@router.delete('/professionals/resume/{resume_id}')
-async def delete_professional_resume(db: Annotated[Session, Depends(get_db)],
-                               verified_user: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
-                               resume_id: Annotated[str, Path(description='Optional resume id update parameter')]):
-    return await crud_professional.delete_resume_by_id(db, verified_user, resume_id)
+# @router.delete('/professionals/resume/{resume_id}')
+# async def delete_professional_resume(db: Annotated[Session, Depends(get_db)],
+#                                verified_user: Annotated[UserDisplay, Depends(crud_professional.is_user_verified)],
+#                                resume_id: Annotated[str, Path(description='Optional resume id update parameter')]):
+#     return await crud_professional.delete_resume_by_id(db, verified_user, resume_id)
 
 
 @router.delete('/professionals/{professional_id}', status_code=204)

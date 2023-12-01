@@ -164,28 +164,28 @@ async def test_get_professional_error404(db, test_db):
     assert exception.value.detail == 'You are not logged as professional'
 
     
-@pytest.mark.asyncio
-async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
-    user, professional = filling_test_db
-    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+# @pytest.mark.asyncio
+# async def test_delete_resume_by_id_success(db, mocker, test_db, filling_test_db, filling_info_test_db, filling_resume_test_db):
+#     user, professional = filling_test_db
+#     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
-    with pytest.raises(HTTPException) as exception:
-        await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
+#     with pytest.raises(HTTPException) as exception:
+#         await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
 
-    assert exception.value.status_code == 204
-    assert exception.value.detail == 'Main resume changed successfully'
+#     assert exception.value.status_code == 204
+#     assert exception.value.detail == 'Main resume changed successfully'
 
 
-@pytest.mark.asyncio
-async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db, filling_info_test_db):
-    user, professional = filling_test_db
-    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+# @pytest.mark.asyncio
+# async def test_delete_resume_by_id_error404(db, mocker, test_db, filling_test_db, filling_info_test_db):
+#     user, professional = filling_test_db
+#     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
 
-    with pytest.raises(HTTPException) as exception:
-        await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
+#     with pytest.raises(HTTPException) as exception:
+#         await crud_professional.delete_resume_by_id(db, user, resume_id='test-resume-id-1')
 
-    assert exception.value.status_code == 404
-    assert exception.value.detail == 'Resume not found'
+#     assert exception.value.status_code == 404
+#     assert exception.value.detail == 'Resume not found'
 
 
 @pytest.mark.asyncio

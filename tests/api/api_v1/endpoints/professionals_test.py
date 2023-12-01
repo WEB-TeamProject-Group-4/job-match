@@ -278,19 +278,19 @@ async def test_set_main_resume_success(client: TestClient, test_db, db, mocker, 
     assert 'test-resume-id-1' == changed_summary.main_ad
 
 
-@pytest.mark.asyncio
-async def test_delete_professional_resume_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
-    user, professional = fill_test_db
-    mocker.patch('app.core.auth.get_user_by_username', return_value=user)
-    mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
-    resume_id = 'test-resume-id-1'
+# @pytest.mark.asyncio
+# async def test_delete_professional_resume_success(client: TestClient, test_db, db, mocker, fill_test_db, fill_info_test_db, fill_resume_test_db):
+#     user, professional = fill_test_db
+#     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+#     mocker.patch('app.crud.crud_professional.get_professional', return_value=professional)
+#     resume_id = 'test-resume-id-1'
 
-    response = client.delete(f'/professionals/resume/{resume_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
+#     response = client.delete(f'/professionals/resume/{resume_id}', headers={"Authorization": f"Bearer {get_valid_token()}"})
     
-    assert response.status_code == 204
-    deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
+#     assert response.status_code == 204
+#     deleted_resume: DbAds = (db.query(DbAds).filter(DbAds.id == 'test-resume-id-1').first())
     
-    assert deleted_resume == None
+#     assert deleted_resume == None
 
 
 @pytest.mark.asyncio
