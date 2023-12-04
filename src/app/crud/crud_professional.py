@@ -219,16 +219,16 @@ async def get_professional(db: Session, user: DbUsers) -> DbProfessionals:
     return professional
 
 
-async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
-    professional: DbProfessionals = await get_professional(db, user)
-    resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id, DbAds.is_deleted == False).first()
-    if resume and resume.info.id == professional.info.id:
-        db.delete(resume)
-        db.commit()
+# async def delete_resume_by_id(db: Session, user: DbUsers, resume_id: str):
+#     professional: DbProfessionals = await get_professional(db, user)
+#     resume:DbAds = db.query(DbAds).filter(DbAds.id == resume_id, DbAds.is_deleted == False).first()
+#     if resume and resume.info.id == professional.info.id:
+#         db.delete(resume)
+#         db.commit()
 
-        raise HTTPException(status_code=204, detail="Main resume changed successfully")
+#         raise HTTPException(status_code=204, detail="Main resume changed successfully")
     
-    raise HTTPException(status_code=404, detail="Resume not found")
+#     raise HTTPException(status_code=404, detail="Resume not found")
 
     
 async def delete_professional_by_id(db: Session, professional_id: str) -> None:
