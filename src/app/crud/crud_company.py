@@ -393,7 +393,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
             })
 
     @staticmethod
-    async def get_matches_multi(db: Session, company: CompanyModelType) -> list[CompanyMatchDisplay]:
+    async def get_matches_multi(db: Session, company: CompanyModelType, page: int) -> list[CompanyMatchDisplay]:
         """
          Retrieve matches for a company's job advertisements.
 
@@ -402,6 +402,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
         Parameters:
         - **db**: The database session.
         - **company**: The company model for which matches are retrieved.
+        - **page**: The page number for pagination (starts from 1).
 
         Returns: A list of CompanyMatchDisplay instances containing information about the matches.
         -
@@ -409,7 +410,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
         company_id: str = company.id
         matches: list[JobMatchesModelType] = db.query(DbJobsMatches).join(DbAds).filter(
             DbJobsMatches.is_deleted == False,
-            DbJobsMatches.company_id == company_id).all()
+            DbJobsMatches.company_id == company_id).limit(10).offset((page - 1) * 10).all()
         return [CompanyMatchDisplay(company_name=match.company.name,
                                     professional_name=match.professional.first_name + ' ' + match.professional.last_name,
                                     job_ad=AdDisplay(**match.ad.__dict__),

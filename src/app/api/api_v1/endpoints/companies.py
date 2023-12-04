@@ -330,7 +330,9 @@ async def search_for_matches(db: Annotated[Session, Depends(get_db)],
 
 @router.get('/companies/match/')
 async def get_matches(db: Annotated[Session, Depends(get_db)],
-                      current_user: Annotated[DbUsers, Depends(get_current_user)]) -> list[company.CompanyMatchDisplay]:
+                      current_user: Annotated[DbUsers, Depends(get_current_user)],
+                      page: Annotated[int, Query(description='Optional page number query parameter', ge=1)] = 1
+                      ) -> list[company.CompanyMatchDisplay]:
     """
     Retrieve matches for a company's job advertisements.
 
@@ -340,11 +342,12 @@ async def get_matches(db: Annotated[Session, Depends(get_db)],
     Parameters:
     - **db**: The database session dependency.
     - **current_user**: Details about the current user obtained from the authentication token.
+    - **page**: Optional parameter for specifying the page number (default is 1).
 
     Returns:
     - **list[CompanyMatchDisplay]**: A list of company match displays containing information about the matches.
     """
-    return await CRUDCompany.get_matches_multi(db, current_user.company[0])
+    return await CRUDCompany.get_matches_multi(db, current_user.company[0], page)
 
 
 @router.patch('/companies/match')

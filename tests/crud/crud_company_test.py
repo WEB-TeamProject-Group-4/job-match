@@ -433,7 +433,7 @@ async def test_get_matches_multi(db, test_db):
     await fill_match_db(db)
     company = db.query(DbCompanies).first()
 
-    result = await CRUDCompany.get_matches_multi(db, company)
+    result = await CRUDCompany.get_matches_multi(db, company, 1)
 
     assert result == []
 
@@ -450,7 +450,7 @@ async def test_get_matches_multi(db, test_db):
     db.add(match)
     db.commit()
 
-    result = await CRUDCompany.get_matches_multi(db, company)
+    result = await CRUDCompany.get_matches_multi(db, company, 1)
 
     assert len(result) == 1
 

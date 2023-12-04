@@ -265,6 +265,6 @@ async def test_delete_ad_deletes_job_matches(db, test_db):
     await delete_ad_crud(db, company_ad.id, user)
     await delete_ad_crud(db, professional_ad.id, user1)
 
-    result = await CRUDCompany.get_matches_multi(db, company)
+    result = await CRUDCompany.get_matches_multi(db, company, 1)
 
     assert len(result) == 0
