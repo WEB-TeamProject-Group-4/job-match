@@ -51,14 +51,12 @@ def get_users(db: Annotated[Session, Depends(get_db)],
     Parameters:
     - **db** (Session): The database session dependency used for interacting with the database.
     - **current_user** (DbUsers): Information about the authenticated user, obtained from the authentication token.
-    - **schema** (UserCreate): The schema containing the information for creating a new user.
 
     Returns:
     200 OK: Returns a list of UserDisplay objects for the specified page of verified users.
 
     Raises:
     - HTTPException 401: If the user is not authenticated.
-    - HTTPException 404: If there are no available users.
     """
 
     users = db.query(DbUsers).filter(DbUsers.is_verified == 1).all()
