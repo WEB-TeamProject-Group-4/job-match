@@ -45,15 +45,14 @@ def get_users(db: Annotated[Session, Depends(get_db)],
     GET /users
 
     Description:
-    Retrieves a paginated list of verified users.
-    This endpoint fetches users who are verified and presents them in a paginated format.
+    Retrieves a list of verified users.
 
     Parameters:
     - **db** (Session): The database session dependency used for interacting with the database.
     - **current_user** (DbUsers): Information about the authenticated user, obtained from the authentication token.
 
     Returns:
-    200 OK: Returns a list of UserDisplay objects for the specified page of verified users.
+    200 OK: Returns a list of UserDisplay objects of verified users.
 
     Raises:
     - HTTPException 401: If the user is not authenticated.
