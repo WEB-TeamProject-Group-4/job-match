@@ -2,16 +2,20 @@
 name = 'Job_Match'
 version = '0.1.0'
 description = ''
+license = {text = 'MIT'}
 readme = 'README.md'
 
 dependencies = [
     'fastapi==0.104.1', 'sqlalchemy==2.0.23', 'uvicorn==0.24.0.post1', 'bcrypt==4.0.1',
     'fastapi-mail==1.4.1', 'passlib==1.7.4', 'pydantic-settings==2.0.3', 'pyjwt==2.8.0',
-    'pymysql==1.1.0', 'python-multipart==0.0.6'
+    'pymysql==1.1.0', 'python-multipart==0.0.6', 'Jinja2==3.1.2', 'psycopg2==2.9.9'
 ]
 
+[project.optional-dependencies]
+tests = ['pytest-cov==4.1.0', 'pytest==7.4.3', 'pytest-asyncio==0.21.1', 'httpx==0.25.1']
+
 [project.urls]
-Github = 'https://github.com/WEB-TeamProject-Group-4/job-match'
+Repository = 'https://github.com/WEB-TeamProject-Group-4/job-match'
 
 [tool.pytest.ini_options]
 pythonpath = [
