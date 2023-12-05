@@ -110,7 +110,7 @@ ad_data_list = [
 
 skill_data_list = [
     {'name': 'dummySkill1'}, {'name': 'dummySkill2'}, {'name': 'dummySkill3'}, {'name': 'dummySkill4'},
-    {'name': 'dummySkill5'}
+    {'name': 'dummySkill5'}, {'name': 'dummySkill6'}
 ]
 
 
@@ -329,7 +329,7 @@ async def test_get_skills(client: TestClient, test_db, db, mocker):
     data = response.json()
 
     assert response.status_code == 200
-    assert len(data) == 5
+    assert len(data) == 5  # Because of pagination
 
 
 @pytest.mark.asyncio
