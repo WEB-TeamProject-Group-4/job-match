@@ -1,6 +1,8 @@
 from typing import Annotated, List
 from nudenet import NudeDetector
 import os
+import random
+import string
 
 from fastapi import Depends, APIRouter, File, HTTPException, Path, Query, UploadFile
 from sqlalchemy.orm import Session
@@ -167,7 +169,8 @@ async def upload(db: Annotated[Session, Depends(get_db)],
                    Returns a 404 error if the professional profile is not found.
     """
     file = await image.read()
-    file_path = './image.jpeg'
+    path = ''.join(random.choice(string.ascii_letters) for _ in range(6))
+    file_path = f'./{path}.jpeg'
     detector = NudeDetector()
 
     with open(file_path, "wb") as f:
