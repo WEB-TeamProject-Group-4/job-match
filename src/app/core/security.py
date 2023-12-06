@@ -21,3 +21,17 @@ def create_access_token(data: dict, expires_delta: Optional[int] = None, securit
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, security_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+
+
+all_labels = [
+    "BUTTOCKS_EXPOSED",
+    "FEMALE_BREAST_EXPOSED",
+    "FEMALE_GENITALIA_EXPOSED",
+    "MALE_BREAST_EXPOSED",
+    "ANUS_EXPOSED",
+    "FEET_EXPOSED",
+    "ARMPITS_EXPOSED",
+    "BELLY_EXPOSED",
+    "MALE_GENITALIA_EXPOSED",
+]
