@@ -50,7 +50,7 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
 - Register endpoints (for both employers and professionals) - requires username, first name, last name, and password (professionals) and  username, company name and password (companies);
 - Features, related to companies:
   * Create company;
-  * View all companies;
+  * View all approved companies;
   * Update company information;
   * Searching company by ID;
   * Remove company - removes also created user, related to this company;
@@ -58,7 +58,40 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
   * Update company information;
   * Upload company logo;
   * View company logo;
-  
+  * View company information;
+  * Delete company information;
+  * Search for matches - for each ad, a company can check for possible resume matches;
+  * Approving potential matches - company can decide to approve the match;
+  * View all matches;
+    
+- Features, related to professionals:
+  * Create professional;
+  * View all approved professionals;
+  * View professional information;
+  * Create/Update professional information;
+  * Upload professional image;
+  * View professional image;
+  * Edit professional summary;
+  * Change professional status;
+  * Set main resume;
+  * Delete professional profile - removes also created user, related to this professional;
+  * Search for matches - for each resume, a professional can check for possible ad matches;
+  * Approving potential matches - professional can decide to approve the match;
+  * View all matches;
+ 
+- Features, related to ads / resumes:
+  * Create ad (for companies) / resume (for professionals);
+  * View all resumes - this feature can be used by companies;
+  * View all job ads - this feature can be used by professionals;
+  * Update ads / resumes;
+  * View ad / resume by its ID;
+  * Delete ad / resume;
+  * Create skill;
+  * View all skills;
+  * Update skill;
+  * Delete skill;
+  * Add skill to ad / resume;
+  * Remove skill from ad / resume;
 
 ## License
 This project is licensed under the terms of MIT license.
