@@ -13,7 +13,7 @@ from app.crud.crud_user import create_user
 router = APIRouter()
 
 
-@router.post('/users', response_model=UserDisplay)
+@router.post('/users', response_model=UserDisplay, include_in_schema=False)
 async def create_user_admin(schema: UserCreate, db: Annotated[Session, Depends(get_db)]):
     """
     POST /users
@@ -38,7 +38,7 @@ async def create_user_admin(schema: UserCreate, db: Annotated[Session, Depends(g
     return await create_user(db, schema)
 
 
-@router.get('/users', response_model=List[UserDisplay])
+@router.get('/users', response_model=List[UserDisplay], include_in_schema=False)
 def get_users(db: Annotated[Session, Depends(get_db)],
               current_user: Annotated[DbUsers, Depends(get_current_user)]):
     """

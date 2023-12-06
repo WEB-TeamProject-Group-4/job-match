@@ -16,7 +16,7 @@ from app.db.models import DbProfessionals, DbUsers
 from app.schemas.professional import ProfessionalAdMatchDisplay, ProfessionalCreate, ProfessionalCreateDisplay, ProfessionalDisplay, ProfessionalInfoDisplay, ProfessionalStatus
 from app.schemas.user import UserDisplay
 
-router = APIRouter()
+router = APIRouter(tags=['professional'])
 
 
 @router.get('/professionals/resumes')
