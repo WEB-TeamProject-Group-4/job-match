@@ -372,7 +372,7 @@ async def get_matches(db: Annotated[Session, Depends(get_db)],
 @router.patch('/companies/match')
 async def approve_match(db: Annotated[Session, Depends(get_db)],
                         current_user: Annotated[DbUsers, Depends(get_current_user)],
-                        resume_id: Annotated[str, Query(description='Mandatory professional ad id')]) -> JSONResponse:
+                        resume_id: Annotated[str, Query(description='Mandatory professional resume id')]) -> JSONResponse:
     """
     Approve a match between a company and a professional.
 
