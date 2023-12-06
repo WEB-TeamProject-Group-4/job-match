@@ -1,10 +1,15 @@
+import os
+import random
+import string
 from typing import Annotated, List
 
 from fastapi import Depends, APIRouter, HTTPException, status, Query, Path, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
+from nudenet import NudeDetector
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.security import all_labels
 from app.crud.crud_user import create_user
 from app.crud.crud_company import CRUDCompany
 from app.db.database import get_db
@@ -36,7 +41,6 @@ async def create_company(schema: company.CompanyCreate, db: Annotated[Session, D
 
 @router.get('/companies', response_model=List[company.CompanyDisplay])
 async def get_companies(db: Annotated[Session, Depends(get_db)],
-                        current_user: Annotated[DbUsers, Depends(get_current_user)],
                         name: Annotated[str, Query(description='Optional name search parameter')] = None,
                         page: Annotated[int, Query(description='Optional page number query parameter', ge=1)] = 1):
     """
@@ -46,7 +50,6 @@ async def get_companies(db: Annotated[Session, Depends(get_db)],
 
     Parameters:
     - **db**: The database session dependency.
-    - **current_user**: Details about the current user obtained from the authentication token.
     - **name**: Optional parameter for filtering companies by name.
     - **page**: Optional parameter for specifying the page number (default is 1).
 
@@ -172,7 +175,7 @@ async def create_company_info(db: Annotated[Session, Depends(get_db)],
 @router.post('/companies/info/upload')
 async def upload(db: Annotated[Session, Depends(get_db)],
                  current_user: Annotated[DbUsers, Depends(get_current_user)],
-                 image: Annotated[UploadFile, File()]) -> StreamingResponse:
+                 image: Annotated[UploadFile, File()]) -> JSONResponse:
     """
     Upload an image for company information.
 
@@ -184,13 +187,29 @@ async def upload(db: Annotated[Session, Depends(get_db)],
     - **image**: The uploaded image file.
 
     Returns:
-    - A streaming response for the uploaded image.
+    - A JSONResponse with a message indicating the result of the upload.
 
     Raises:
     - HTTPException 401: If the user is not authenticated.
     """
-    f = await image.read()
-    b = bytearray(f)
+    file = await image.read()
+    path = ''.join(random.choice(string.ascii_letters) for _ in range(6))
+    file_path = f'./{path}.jpeg'
+    detector = NudeDetector()
+
+    with open(file_path, "wb") as f:
+        f.write(file)
+        result = detector.detect(file_path)
+
+    if any(element['class'] in all_labels for element in result):
+        os.remove(file_path)
+        raise HTTPException(
+            status_code=400,
+            detail='This photo is with explicit content.'
+        )
+
+    os.remove(file_path)
+    b = bytearray(file)
     return await CRUDCompany.upload(db, current_user.company[0].info_id, b)
 
 

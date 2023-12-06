@@ -364,7 +364,7 @@ async def test_upload(db, test_db):
 
     result = await CRUDCompany.upload(db, info.id, bytearray(image))
 
-    assert isinstance(result, StreamingResponse)
+    assert result.body == b'{"message":"Image uploaded successfully"}'
 
     # Test with invalid info id
     with pytest.raises(HTTPException) as exception:

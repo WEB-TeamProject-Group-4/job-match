@@ -89,15 +89,6 @@ def test_create_company_missing_fields(client: TestClient, test_db, mocker, test
     assert data['detail'][0]['loc'] == expected_loc
 
 
-@pytest.mark.asyncio
-async def test_get_companies_not_authenticated(client: TestClient):
-    response = client.get('/companies')
-    data = response.json()
-
-    assert response.status_code == 401
-    assert data['detail'] == 'Not authenticated'
-
-
 def test_get_companies_success(client: TestClient, test_db, db, mocker):
     user_data_list = [
         {'id': 'test-id-one', "username": "User1", "email": "test1@example.com", "password": "password123",
@@ -125,9 +116,8 @@ def test_get_companies_success(client: TestClient, test_db, db, mocker):
         db.add(company)
 
     db.commit()
-    mocker.patch('app.core.auth.get_user_by_username', return_value=create_user())
 
-    response = client.get('/companies', headers={"Authorization": f"Bearer {get_valid_token()}"})
+    response = client.get('/companies')
     data = response.json()
 
     assert response.status_code == 200
@@ -281,13 +271,22 @@ async def test_upload(client: TestClient, db, test_db, mocker):
     db.add(info)
     db.commit()
     mocker.patch('app.core.auth.get_user_by_username', return_value=user)
+    mocker.patch('app.api.api_v1.endpoints.companies.NudeDetector.detect')
     mock_image_data = b'test image data'
 
     response = client.post('/companies/info/upload', headers={"Authorization": f"Bearer {get_valid_token()}"},
                            files={'image': ('test_image.jpg', mock_image_data, 'image/jpeg')})
 
     assert response.status_code == 200
-    assert response.content == b'test image data'
+    assert response.json().get('message') == "Image uploaded successfully"
+
+    # Testing with explicit content
+    mocker.patch('app.api.api_v1.endpoints.companies.NudeDetector.detect', return_value=[{'class': 'BUTTOCKS_EXPOSED'}])
+
+    response = client.post('/companies/info/upload', headers={"Authorization": f"Bearer {get_valid_token()}"},
+                           files={'image': ('test_image.jpg', mock_image_data, 'image/jpeg')})
+
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio

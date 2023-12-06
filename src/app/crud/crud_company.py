@@ -273,7 +273,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
             return
 
     @staticmethod
-    async def upload(db: Session, info_id: str, image: bytearray) -> StreamingResponse:
+    async def upload(db: Session, info_id: str, image: bytearray) -> JSONResponse:
         """
         Upload an image for additional information of a company.
 
@@ -286,7 +286,7 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
         - **image**: The image data to be uploaded.
 
         Returns:
-        - A streaming response containing the uploaded image.
+        - A JSONResponse with a message indicating the result of the upload.
 
         Raises:
         - HTTPException 404: If no company information is found with the provided info_id.
@@ -300,7 +300,9 @@ class CRUDCompany(Generic[CompanyModelType, InfoModelType, UserModelType, AdMode
             )
         info.picture = image
         db.commit()
-        return StreamingResponse(io.BytesIO(image), media_type="image/jpeg")
+        return JSONResponse({
+            "message": "Image uploaded successfully"
+        })
 
     @staticmethod
     async def get_image(db: Session, info_id: str) -> StreamingResponse:
