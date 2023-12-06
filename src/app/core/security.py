@@ -8,14 +8,14 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.core.config import settings
 
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 SECRET_KEY: str = secrets.token_urlsafe(32)
 EMAIL_KEY: str = secrets.token_urlsafe(32)
 
 
-def create_access_token(data: dict, expires_delta: Optional[int] = None, security_key: Optional[str] = SECRET_KEY) -> str:
+def create_access_token(data: dict, expires_delta: Optional[int] = None,
+                        security_key: Optional[str] = SECRET_KEY) -> str:
     """
     Function Name: create_access_token
 
@@ -39,7 +39,6 @@ def create_access_token(data: dict, expires_delta: Optional[int] = None, securit
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, security_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
-
 
 
 all_labels = [
