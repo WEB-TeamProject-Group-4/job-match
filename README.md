@@ -56,7 +56,7 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
   * Remove company - removes also created user, related to this company;
   * Create company information;
   * Update company information;
-  * Upload company logo;
+  * Upload company logo - implemented check for explicit content;
   * View company logo;
   * View company information;
   * Delete company information;
@@ -69,7 +69,7 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
   * View all approved professionals;
   * View professional information;
   * Create/Update professional information;
-  * Upload professional image;
+  * Upload professional image - implemented check for explicit content;
   * View professional image;
   * Edit professional summary;
   * Change professional status;
