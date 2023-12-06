@@ -44,5 +44,11 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
 └───tests                 - project tests.
 ```
 
+## Features:
+- Public part - accessible without authentication;
+- Login endpoints (for both employers and professionals) - access the private endpoints of the application. Login requires username and password;
+- Register endpoints (for both employers and professionals) - requires username, first name, last name, and password (professionals) and  username, company name and password (companies);
+  
+
 ## License
 This project is licensed under the terms of MIT license.
