@@ -27,6 +27,9 @@ pytest
 You can also write your own tests in the `tests/` directory. <br>
 The test follow by the official support [FastAPI testing guide](https://fastapi.tiangolo.com/tutorial/testing/), [pytest](https://docs.pytest.org/en/stable/), [pytest-asyncio](https://pytest-asyncio.readthedocs.io/en/latest/) for async testing application.
 
+## Database
+<img width="937" alt="Screenshot 2023-12-06 at 13 00 48" src="https://github.com/WEB-TeamProject-Group-4/job-match/assets/138571393/747e9413-2678-4cff-a73a-8854be246fb2">
+
 
 ## Project structure
 ```
