@@ -48,6 +48,17 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
 - Public part - accessible without authentication;
 - Login endpoints (for both employers and professionals) - access the private endpoints of the application. Login requires username and password;
 - Register endpoints (for both employers and professionals) - requires username, first name, last name, and password (professionals) and  username, company name and password (companies);
+- Features, related to companies:
+* Create company;
+* View all companies;
+* Update company information;
+* Searching company by ID;
+* Remove company - removes also created user, related to this company;
+* Create company information;
+* Update company information;
+* Upload company logo;
+* View company logo;
+* 
   
 
 ## License
