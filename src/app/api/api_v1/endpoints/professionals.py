@@ -1,9 +1,12 @@
 from typing import Annotated, List
+from nudenet import NudeDetector
+import os
 
-from fastapi import Depends, APIRouter, File, Path, Query, UploadFile
+from fastapi import Depends, APIRouter, File, HTTPException, Path, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.security import all_labels
 import app.crud.crud_professional as crud_professional
 from app.crud.crud_user import create_user
 from app.db.database import get_db
@@ -164,6 +167,22 @@ async def upload(db: Annotated[Session, Depends(get_db)],
                    Returns a 404 error if the professional profile is not found.
     """
     file = await image.read()
+    file_path = './image.jpeg'
+    detector = NudeDetector()
+
+    with open(file_path, "wb") as f:
+        f.write(file)
+
+        result = detector.detect(file_path)
+        if any(element['class'] in all_labels for element in result):
+            os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail='This photo is with explicit content.'
+            ) 
+
+        os.remove(file_path)
+        
     binary_pic = bytearray(file)
     return await crud_professional.upload_picture(db, current_user.professional[0].info_id, binary_pic)
 
