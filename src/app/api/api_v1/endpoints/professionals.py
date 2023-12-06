@@ -175,16 +175,16 @@ async def upload(db: Annotated[Session, Depends(get_db)],
 
     with open(file_path, "wb") as f:
         f.write(file)
-
         result = detector.detect(file_path)
-        if any(element['class'] in all_labels for element in result):
-            os.remove(file_path)
-            raise HTTPException(
-                status_code=400,
-                detail='This photo is with explicit content.'
-            ) 
 
+    if any(element['class'] in all_labels for element in result):
         os.remove(file_path)
+        raise HTTPException(
+            status_code=400,
+            detail='This photo is with explicit content.'
+        ) 
+
+    os.remove(file_path)
         
     binary_pic = bytearray(file)
     return await crud_professional.upload_picture(db, current_user.professional[0].info_id, binary_pic)
