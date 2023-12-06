@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, BINARY, LargeBinary
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import relationship
 

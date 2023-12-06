@@ -1,6 +1,6 @@
+import pytest
 import copy
 
-import pytest
 from fastapi import HTTPException
 
 from app.crud.crud_company import CRUDCompany

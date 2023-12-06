@@ -1,8 +1,11 @@
 import secrets
-from fastapi.security import OAuth2PasswordBearer
+import jwt
+
 from typing import Optional
 from datetime import timedelta, datetime, UTC
-import jwt
+
+from fastapi.security import OAuth2PasswordBearer
+
 from app.core.config import settings
 
 
@@ -13,6 +16,21 @@ EMAIL_KEY: str = secrets.token_urlsafe(32)
 
 
 def create_access_token(data: dict, expires_delta: Optional[int] = None, security_key: Optional[str] = SECRET_KEY) -> str:
+    """
+    Function Name: create_access_token
+
+    Description: Generates a JWT (JSON Web Token) for user authentication.
+    This function creates an access token with an optional expiration time, encoding user-specific data and a secret key.
+
+    Parameters:
+    - **data** (dict): A dictionary containing data to be included in the token, typically user identification information.
+    - **expires_delta** (Optional[int]): The number of minutes until the token expires. If not specified,
+    a default expiration time is used.
+    - **security_key** (Optional[str]): The secret key used for encoding the token. Defaults to SECRET_KEY if not specified.
+
+    Returns: str: The encoded JWT token.
+    """
+
     if expires_delta:
         expire = datetime.now(UTC) + timedelta(minutes=expires_delta)
     else:
