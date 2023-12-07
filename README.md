@@ -32,6 +32,7 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
 - Public part - accessible without authentication;
 - Login endpoints (for both employers and professionals) - access the private endpoints of the application. Login requires username and password;
 - Register endpoints (for both employers and professionals) - requires username, first name, last name, and password (professionals) and  username, company name and password (companies);
+  
 - Features, related to companies:
   * Create company;
   * View all approved companies;
@@ -67,8 +68,9 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
   * Create ad (for companies) / resume (for professionals);
   * View all resumes - this feature can be used by companies;
   * View all job ads - this feature can be used by professionals;
-  * Update ads / resumes;
-  * View ad / resume by its ID;
+  * Update job ads - restricted for professional;
+  * Update resumes - restricted for companies;
+  * View ad / resume by ID;
   * Delete ad / resume;
   * Create skill;
   * View all skills;
