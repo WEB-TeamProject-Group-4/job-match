@@ -81,7 +81,8 @@ The test follow by the official support [FastAPI testing guide](https://fastapi.
  
  
 ## Database
-<img width="937" alt="Screenshot 2023-12-06 at 13 00 48" src="https://github.com/WEB-TeamProject-Group-4/job-match/assets/138571393/747e9413-2678-4cff-a73a-8854be246fb2">
+
+![db screen](https://github.com/WEB-TeamProject-Group-4/job-match/assets/138625993/05f7e648-2a0d-4d51-a3e8-76a4cf7fb901)
 
 
 ## Project structure
