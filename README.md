@@ -1,7 +1,7 @@
 # Job-match
 Back-end, web application designed for job matching, enabling companies to create job listings while allowing professionals to craft resumes and connect each other for the perfect match.
 
-**Swagger documentation:** [Link](https://job-match-c1sd.onrender.com/docs)
+**Swagger documentation:** [Link](https://job-match-c1sd.onrender.com/docs) (First opening will take a while to load.)
 
 ## Installation
 #### 1. Clone the project:
